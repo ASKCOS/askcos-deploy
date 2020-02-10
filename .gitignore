@@ -1,0 +1,15 @@
+# Compiled Python modules
+*.pyc
+*.so
+*.pyd
+
+# artfacts from using JupyterLab
+*ipynb_checkpoints*
+
+# ignore SSL key
+askcos.ssl.cert
+askcos.ssl.key
+
+# ignore pycharm folder
+.idea/
+
