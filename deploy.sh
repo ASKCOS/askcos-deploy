@@ -57,9 +57,10 @@ n_sites_worker=1         # Site selectivity worker
 n_impurity_worker=1      # Impurity worker
 n_atom_mapping_worker=1  # Atom mapping worker
 
+# Get docker compose variables from .env
+source .env
+
 # Default argument values
-COMPOSE_FILE=""
-COMPOSE_PROJECT_NAME="askcos"
 VERSION=""
 BUYABLES=""
 CHEMICALS=""
