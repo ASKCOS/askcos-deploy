@@ -176,11 +176,13 @@ services:
 
   template-relevance-reaxys:
     image: registry.gitlab.com/mlpds_mit/askcos/askcos/models:template-relevance-reaxys
+    restart: always
     expose:
       - 8501
 
   fast-filter:
     image: registry.gitlab.com/mlpds_mit/askcos/askcos/models:fast-filter
+    restart: always
     expose:
       - 8501
 
