@@ -42,6 +42,9 @@ services:
     env_file:
       - .env
       - customization
+    environment:
+      - VERSION_NUMBER  # this overrides value in .env if a different value was specified to deploy.sh
+      - UPDATE_DATE
     command: bash -c "uwsgi --socket :8000 --master --processes=4 --wsgi-file /usr/local/ASKCOS/askcos/wsgi.py"
     expose:
       - '8000'
