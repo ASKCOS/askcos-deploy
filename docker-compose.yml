@@ -3,8 +3,6 @@ services:
   nginx:
     image: nginx:1.17.6
     restart: always
-    depends_on:
-      - app
     volumes:
       - './nginx.conf:/etc/nginx/nginx.conf'
       - './uwsgi_params:/etc/nginx/uwsgi_params'
@@ -50,11 +48,6 @@ services:
     volumes:
       - 'staticdata:/usr/local/ASKCOS/askcos/askcos_site/static'
       - 'appdata:/usr/local/ASKCOS/makeit/data'
-    depends_on:
-      - redis
-      - rabbit
-      - mysql
-      - mongo
 
   te_coordinator:
     image: registry.gitlab.com/mlpds_mit/askcos/askcos:${VERSION:-2020.04}
@@ -62,9 +55,6 @@ services:
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 2 -Q te_coordinator -n te_coordinator@%h"
-    depends_on:
-      - redis
-      - rabbit
 
   sc_coordinator:
     image: registry.gitlab.com/mlpds_mit/askcos/askcos:${VERSION:-2020.04}
@@ -72,11 +62,6 @@ services:
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 2 -Q sc_coordinator -n sc_coordinator@%h --pool gevent"
-    depends_on:
-      - redis
-      - rabbit
-      - mysql
-      - mongo
 
   ft_worker:
     image: registry.gitlab.com/mlpds_mit/askcos/askcos:${VERSION:-2020.04}
@@ -84,11 +69,6 @@ services:
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 2 -Q ft_worker -n ft_worker@%h"
-    depends_on:
-      - redis
-      - rabbit
-      - mysql
-      - mongo
 
   cr_network_worker:
     image: registry.gitlab.com/mlpds_mit/askcos/askcos:${VERSION:-2020.04}
@@ -96,11 +76,6 @@ services:
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 2 -Q cr_network_worker -n cr_network_worker@%h --pool=gevent"
-    depends_on:
-      - redis
-      - rabbit
-      - mysql
-      - mongo
 
   tb_coordinator_mcts:
     image: registry.gitlab.com/mlpds_mit/askcos/askcos:${VERSION:-2020.04}
@@ -108,11 +83,6 @@ services:
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 4 -Q tb_coordinator_mcts -n tb_coordinator_mcts@%h --pool=gevent --without-heartbeat"
-    depends_on:
-      - redis
-      - rabbit
-      - mysql
-      - mongo
 
   tb_c_worker:
     image: registry.gitlab.com/mlpds_mit/askcos/askcos:${VERSION:-2020.04}
@@ -120,11 +90,6 @@ services:
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 48 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent"
-    depends_on:
-      - redis
-      - rabbit
-      - mysql
-      - mongo
 
   tb_c_worker_preload:
     image: registry.gitlab.com/mlpds_mit/askcos/askcos:${VERSION:-2020.04}
@@ -132,11 +97,6 @@ services:
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 1 -Q tb_c_worker_preload -n tb_c_worker_preload@%h"
-    depends_on:
-      - redis
-      - rabbit
-      - mysql
-      - mongo
 
   sites_worker:
     image: registry.gitlab.com/mlpds_mit/askcos/askcos:0.4.0
@@ -144,11 +104,6 @@ services:
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 1 -Q sites_worker --pool=gevent -n sites_worker@%h"
-    depends_on:
-      - redis
-      - rabbit
-      - mysql
-      - mongo
 
   impurity_worker:
     image: registry.gitlab.com/mlpds_mit/askcos/askcos:${VERSION:-2020.04}
@@ -156,11 +111,6 @@ services:
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 1 -Q impurity_worker --pool=gevent -n impurity_worker@%h"
-    depends_on:
-      - redis
-      - rabbit
-      - mysql
-      - mongo
 
   atom_mapping_worker:
     image: registry.gitlab.com/mlpds_mit/askcos/askcos:${VERSION:-2020.04}
@@ -168,11 +118,6 @@ services:
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 3 -Q atom_mapping_worker --pool=gevent -n atom_mapping_worker@%h"
-    depends_on:
-      - redis
-      - rabbit
-      - mysql
-      - mongo
 
   template-relevance-reaxys:
     image: registry.gitlab.com/mlpds_mit/askcos/askcos/models:template-relevance-reaxys
