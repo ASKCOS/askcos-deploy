@@ -144,7 +144,7 @@ clean-static() {
   echo "Cleaning up old static file volume..."
   docker-compose stop app nginx
   docker-compose rm -f app nginx
-  docker volume rm $COMPOSE_PROJECT_NAME\_staticdata
+  docker volume rm ${COMPOSE_PROJECT_NAME}_staticdata
   echo "Clean up complete."
   echo
 }
