@@ -61,7 +61,6 @@ n_atom_mapping_worker=1  # Atom mapping worker
 source .env
 
 # Default argument values
-VERSION=""
 BUYABLES=""
 CHEMICALS=""
 REACTIONS=""
@@ -94,7 +93,7 @@ while (( "$#" )); do
       shift 1
       ;;
     -v|--version)
-      VERSION=$2
+      VERSION_NUMBER=$2
       shift 2
       ;;
     -b|--buyables)
@@ -135,8 +134,8 @@ done
 # Set positional arguments in their proper place
 eval set -- "$COMMANDS"
 
-# Export VERSION and COMPOSE_FILE so they're available to docker-compose
-export VERSION
+# Export variables needed by docker-compose
+export VERSION_NUMBER
 export COMPOSE_FILE
 export COMPOSE_PROJECT_NAME
 
