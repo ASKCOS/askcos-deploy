@@ -58,6 +58,7 @@ n_atom_mapping_worker=1  # Atom mapping worker
 
 # Default argument values
 COMPOSE_FILE=""
+COMPOSE_PROJECT_NAME="askcos"
 VERSION=""
 BUYABLES=""
 CHEMICALS=""
@@ -78,6 +79,10 @@ while (( "$#" )); do
       else
         COMPOSE_FILE=$COMPOSE_FILE:$2
       fi
+      shift 2
+      ;;
+    -p|--project-name)
+      COMPOSE_PROJECT_NAME=$2
       shift 2
       ;;
     -d|--dev)
@@ -131,13 +136,14 @@ eval set -- "$COMMANDS"
 # Export VERSION and COMPOSE_FILE so they're available to docker-compose
 export VERSION
 export COMPOSE_FILE
+export COMPOSE_PROJECT_NAME
 
 # Define various functions
 clean-static() {
   echo "Cleaning up old static file volume..."
   docker-compose stop app nginx
   docker-compose rm -f app nginx
-  docker volume rm deploy_staticdata
+  docker volume rm $COMPOSE_PROJECT_NAME\_staticdata
   echo "Clean up complete."
   echo
 }
