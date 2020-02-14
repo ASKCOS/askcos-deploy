@@ -35,6 +35,7 @@ usage() {
   echo "    -r,--retro-templates      retrosynthetic template data for reseeding mongo database"
   echo "    -t,--forward-templates    forward template data for reseeding mongo database"
   echo "    -d,--dev                  use docker-compose configuration for development (fewer workers)"
+  echo "    -p,--project-name         specify project name to be used for services (prefix for docker container names)"
   echo
   echo "Examples:"
   echo "    bash deploy.sh deploy -f docker-compose.yml"
