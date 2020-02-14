@@ -167,14 +167,14 @@ set-db-defaults() {
 
 run-mongo-js() {
   # arg 1 is js command
-  docker-compose exec mongo bash -c 'mongo --username ${MONGO_USER} --password ${MONGO_PW} --authenticationDatabase admin ${MONGO_HOST}/askcos --quiet --eval '"'$1'"
+  docker-compose exec -T mongo bash -c 'mongo --username ${MONGO_USER} --password ${MONGO_PW} --authenticationDatabase admin ${MONGO_HOST}/askcos --quiet --eval '"'$1'"
 }
 
 seed-db-collection() {
   # arg 1 is collection name
   # arg 2 is file path
   # arg 3 is a flag to pass to docker-compose exec, e.g. -d to detach
-  docker-compose exec $3 mongo bash -c 'gunzip -c '$2' | mongoimport --host ${MONGO_HOST} --username ${MONGO_USER} --password ${MONGO_PW} --authenticationDatabase admin --db askcos --collection '$1' --type json --jsonArray --drop'
+  docker-compose exec -T $3 mongo bash -c 'gunzip -c '$2' | mongoimport --host ${MONGO_HOST} --username ${MONGO_USER} --password ${MONGO_PW} --authenticationDatabase admin --db askcos --collection '$1' --type json --jsonArray --drop'
 }
 
 seed-db() {
@@ -317,8 +317,8 @@ start-celery-workers() {
 
 migrate() {
   echo "Migrating user database..."
-  docker-compose exec app bash -c "python /usr/local/ASKCOS/askcos/manage.py makemigrations main"
-  docker-compose exec app bash -c "python /usr/local/ASKCOS/askcos/manage.py migrate"
+  docker-compose exec -T app bash -c "python /usr/local/ASKCOS/askcos/manage.py makemigrations main"
+  docker-compose exec -T app bash -c "python /usr/local/ASKCOS/askcos/manage.py migrate"
   echo "Migration complete."
   echo
 }
