@@ -5,7 +5,7 @@ metadata:
   labels:
     app: tb-c-worker
 spec:
-  replicas: 12
+  replicas: 1
   selector:
     matchLabels:
       pod: tb-c-worker
@@ -18,7 +18,7 @@ spec:
         - name: tb-c-worker
           image: registry.gitlab.com/mlpds_mit/askcos/askcos:0.4.1
           command: ["/bin/bash"]
-          args: ["-c", "celery -A askcos_site worker -c 1 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent --without-heartbeat"]
+          args: ["-c", "celery -A askcos_site worker -c 12 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent"]
           envFrom:
             - configMapRef:
                 name: django-config
