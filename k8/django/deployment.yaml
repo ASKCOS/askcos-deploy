@@ -28,7 +28,7 @@ spec:
         - name: collectstatic
           image: registry.gitlab.com/mlpds_mit/askcos/askcos:0.4.1
           command: ["/bin/bash"]
-          args: ["-c", "python /usr/local/ASKCOS/askcos/manage.py collectstatic --noinput && mv /usr/local/ASKCOS/askcos/askcos_site/static/* /static/"]
+          args: ["-c", "mv /usr/local/ASKCOS/askcos/askcos_site/static/* /static/"]
           volumeMounts:
             - name: staticfiles
               mountPath: /static
