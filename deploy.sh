@@ -368,7 +368,7 @@ else
         ;;
       update)
         # Update an existing configuration, database seeding is not performed
-        docker pull registry.gitlab.com/mlpds_mit/askcos/askcos:"$VERSION"
+        docker pull ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
         clean-static
         start-db-services
         start-web-services
