@@ -57,10 +57,10 @@ n_sites_worker=1         # Site selectivity worker
 n_impurity_worker=1      # Impurity worker
 n_atom_mapping_worker=1  # Atom mapping worker
 
+# Get docker compose variables from .env
+source .env
+
 # Default argument values
-COMPOSE_FILE=""
-COMPOSE_PROJECT_NAME="askcos"
-VERSION=""
 BUYABLES=""
 CHEMICALS=""
 REACTIONS=""
@@ -93,7 +93,7 @@ while (( "$#" )); do
       shift 1
       ;;
     -v|--version)
-      VERSION=$2
+      VERSION_NUMBER=$2
       shift 2
       ;;
     -b|--buyables)
@@ -134,10 +134,15 @@ done
 # Set positional arguments in their proper place
 eval set -- "$COMMANDS"
 
-# Export VERSION and COMPOSE_FILE so they're available to docker-compose
-export VERSION
+# Retrieve image build date for website footer
+UPDATE_DATE=$(docker inspect -f '{{ .Created }}' ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER})
+UPDATE_DATE=${UPDATE_DATE%T*}  # cut off time, only keeping date
+
+# Export variables needed by docker-compose
+export VERSION_NUMBER
 export COMPOSE_FILE
 export COMPOSE_PROJECT_NAME
+export UPDATE_DATE
 
 # Define various functions
 clean-static() {
@@ -363,7 +368,7 @@ else
         ;;
       update)
         # Update an existing configuration, database seeding is not performed
-        docker pull registry.gitlab.com/mlpds_mit/askcos/askcos:"$VERSION"
+        docker pull ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
         clean-static
         start-db-services
         start-web-services
