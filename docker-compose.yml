@@ -85,14 +85,14 @@ services:
     restart: always
     env_file:
       - .env
-    command: bash -c "celery -A askcos_site worker -c 4 -Q tb_coordinator_mcts -n tb_coordinator_mcts@%h --pool=gevent --without-heartbeat"
+    command: bash -c "celery -A askcos_site worker -c 2 -Q tb_coordinator_mcts -n tb_coordinator_mcts@%h --pool=gevent --without-heartbeat"
 
   tb_c_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
     restart: always
     env_file:
       - .env
-    command: bash -c "celery -A askcos_site worker -c 48 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent"
+    command: bash -c "celery -A askcos_site worker -c 12 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent"
 
   tb_c_worker_preload:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
