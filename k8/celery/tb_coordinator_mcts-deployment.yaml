@@ -3,7 +3,9 @@ kind: Deployment
 metadata:
   name: tb-coordinator-mcts
   labels:
-    app: tb-coordinator-mcts
+    app.kubernetes.io/name: tb-coordinator-mcts
+    app.kubernetes.io/component: celery
+    app.kubernetes.io/part-of: askcos
 spec:
   replicas: 1
   selector:
@@ -13,6 +15,9 @@ spec:
     metadata:
       labels:
         pod: tb-coordinator-mcts
+        app.kubernetes.io/name: tb-coordinator-mcts
+        app.kubernetes.io/component: celery
+        app.kubernetes.io/part-of: askcos
     spec:
       containers:
         - name: tb-coordinator-mcts

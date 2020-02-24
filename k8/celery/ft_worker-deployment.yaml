@@ -3,7 +3,9 @@ kind: Deployment
 metadata:
   name: ft-worker
   labels:
-    app: ft-worker
+    app.kubernetes.io/name: ft-worker
+    app.kubernetes.io/component: celery
+    app.kubernetes.io/part-of: askcos
 spec:
   replicas: 1
   selector:
@@ -13,6 +15,9 @@ spec:
     metadata:
       labels:
         pod: ft-worker
+        app.kubernetes.io/name: ft-worker
+        app.kubernetes.io/component: celery
+        app.kubernetes.io/part-of: askcos
     spec:
       containers:
         - name: ft-worker

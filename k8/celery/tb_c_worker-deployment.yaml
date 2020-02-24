@@ -3,7 +3,9 @@ kind: Deployment
 metadata:
   name: tb-c-worker
   labels:
-    app: tb-c-worker
+    app.kubernetes.io/name: tb-c-worker
+    app.kubernetes.io/component: celery
+    app.kubernetes.io/part-of: askcos
 spec:
   replicas: 1
   selector:
@@ -13,6 +15,9 @@ spec:
     metadata:
       labels:
         pod: tb-c-worker
+        app.kubernetes.io/name: tb-c-worker
+        app.kubernetes.io/component: celery
+        app.kubernetes.io/part-of: askcos
     spec:
       containers:
         - name: tb-c-worker

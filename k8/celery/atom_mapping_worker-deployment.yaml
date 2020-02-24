@@ -3,7 +3,9 @@ kind: Deployment
 metadata:
   name: atom-mapping-worker
   labels:
-    app: atom-mapping-worker
+    app.kubernetes.io/name: atom-mapping-worker
+    app.kubernetes.io/component: celery
+    app.kubernetes.io/part-of: askcos
 spec:
   replicas: 1
   selector:
@@ -13,6 +15,9 @@ spec:
     metadata:
       labels:
         pod: atom-mapping-worker
+        app.kubernetes.io/name: atom-mapping-worker
+        app.kubernetes.io/component: celery
+        app.kubernetes.io/part-of: askcos
     spec:
       containers:
         - name: atom-mapping-worker

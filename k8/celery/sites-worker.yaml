@@ -3,7 +3,9 @@ kind: Deployment
 metadata:
   name: sites-worker
   labels:
-    app: sites-worker
+    app.kubernetes.io/name: sites-worker
+    app.kubernetes.io/component: celery
+    app.kubernetes.io/part-of: askcos
 spec:
   replicas: 1
   selector:
@@ -13,6 +15,9 @@ spec:
     metadata:
       labels:
         pod: sites-worker
+        app.kubernetes.io/name: sites-worker
+        app.kubernetes.io/component: celery
+        app.kubernetes.io/part-of: askcos
     spec:
       containers:
         - name: sites-worker

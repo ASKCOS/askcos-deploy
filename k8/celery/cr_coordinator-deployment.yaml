@@ -3,7 +3,9 @@ kind: Deployment
 metadata:
   name: cr-coordinator
   labels:
-    app: cr-coordinator
+    app.kubernetes.io/name: cr-coordinator
+    app.kubernetes.io/component: celery
+    app.kubernetes.io/part-of: askcos
 spec:
   replicas: 1
   selector:
@@ -13,6 +15,9 @@ spec:
     metadata:
       labels:
         pod: cr-coordinator
+        app.kubernetes.io/name: cr-coordinator
+        app.kubernetes.io/component: celery
+        app.kubernetes.io/part-of: askcos
     spec:
       containers:
         - name: cr-coordinator

@@ -2,6 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mongo
+  labels:
+    app.kubernetes.io/name: mongo
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: askcos
 spec:
   selector:
     matchLabels:
@@ -12,6 +16,9 @@ spec:
     metadata:
       labels:
         pod: mongo
+        app.kubernetes.io/name: mongo
+        app.kubernetes.io/component: database
+        app.kubernetes.io/part-of: askcos
     spec:
       containers:
       - image: mongo:4.2.2

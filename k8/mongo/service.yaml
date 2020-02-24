@@ -3,7 +3,9 @@ kind: Service
 metadata:
   name: mongo
   labels:
-    name: mongo
+    app.kubernetes.io/name: mongo
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: askcos
 spec:
   ports:
   - port: 27017

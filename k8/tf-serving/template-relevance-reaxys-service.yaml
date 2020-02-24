@@ -2,6 +2,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: template-relevance-reaxys
+  labels:
+    app.kubernetes.io/name: template-relevance-reaxys
+    app.kubernetes.io/component: tfserving
+    app.kubernetes.io/part-of: askcos
 spec:
   selector:
     pod: template-relevance-reaxys

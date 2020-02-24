@@ -3,7 +3,9 @@ kind: Deployment
 metadata:
   name: te-coordinator
   labels:
-    app: te-coordinator
+    app.kubernetes.io/name: te-coordinator
+    app.kubernetes.io/component: celery
+    app.kubernetes.io/part-of: askcos
 spec:
   replicas: 1
   selector:
@@ -13,6 +15,9 @@ spec:
     metadata:
       labels:
         pod: te-coordinator
+        app.kubernetes.io/name: te-coordinator
+        app.kubernetes.io/component: celery
+        app.kubernetes.io/part-of: askcos
     spec:
       containers:
         - name: te-coordinator
