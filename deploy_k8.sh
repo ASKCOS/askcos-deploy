@@ -159,12 +159,7 @@ run-mongo-js() {
 seed-db-collection() {
   # arg 1 is collection name
   # arg 2 is file path
-  # arg 3 boolean value indicating whether or not to run in background
-  if [ "$3" == true ]; then
-    kubectl exec $mongo -- bash -c 'nohup gunzip -c '$2' | mongoimport --host ${MONGO_HOST} --username ${MONGO_USER} --password ${MONGO_PW} --authenticationDatabase admin --db askcos --collection '$1' --type json --jsonArray --drop &> /dev/null &'
-  else
-    kubectl exec $mongo -- bash -c 'gunzip -c '$2' | mongoimport --host ${MONGO_HOST} --username ${MONGO_USER} --password ${MONGO_PW} --authenticationDatabase admin --db askcos --collection '$1' --type json --jsonArray --drop'
-  fi
+  kubectl exec $mongo -- bash -c 'gunzip -c '$2' | mongoimport --host ${MONGO_HOST} --username ${MONGO_USER} --password ${MONGO_PW} --authenticationDatabase admin --db askcos --collection '$1' --type json --jsonArray --drop'
 }
 
 copy-file() {
@@ -236,7 +231,7 @@ seed-db() {
       buyables_dest="/data/$(basename "$BUYABLES")"
       copy-file "" "$buyables_src" "" "$mongo" "$buyables_dest" ""
     fi
-    seed-db-collection buyables "$buyables_dest" true
+    seed-db-collection buyables "$buyables_dest" &> seed-buyables.log &
     run-mongo-js 'db.buyables.createIndex({smiles: "text"})'
   fi
 
@@ -252,7 +247,7 @@ seed-db() {
       chemicals_dest="/data/$(basename "$CHEMICALS")"
       copy-file "" "$chemicals_src" "" "$mongo" "$chemicals_dest" ""
     fi
-    seed-db-collection chemicals "$chemicals_dest" true
+    seed-db-collection chemicals "$chemicals_dest" &> seed-chemicals.log &
     run-mongo-js 'db.chemicals.createIndex({smiles: "hashed"})'
   fi
 
@@ -268,7 +263,7 @@ seed-db() {
       reactions_dest="/data/$(basename "$REACTIONS")"
       copy-file "" "$reactions_src" "" "$mongo" "$reactions_dest" ""
     fi
-    seed-db-collection reactions "$reactions_dest" true
+    seed-db-collection reactions "$reactions_dest" &> seed-reactions.log &
   fi
 
   if [ -n "$RETRO_TEMPLATES" ]; then
