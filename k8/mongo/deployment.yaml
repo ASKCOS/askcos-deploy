@@ -16,6 +16,7 @@ spec:
       containers:
       - image: mongo:4.2.2
         name: mongo
+        args: ["--wiredTigerCacheSizeGB", "1.5"]
         env:
           # Use secret in real usage
         - name: MONGO_INITDB_ROOT_USERNAME
@@ -34,6 +35,9 @@ spec:
         volumeMounts:
         - name: mongo-persistent-storage
           mountPath: /data/db
+        resources:
+          requests:
+            memory: "5Gi"
       volumes:
       - name: mongo-persistent-storage
         persistentVolumeClaim:
