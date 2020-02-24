@@ -381,9 +381,9 @@ else
         case "$response" in
           [Yy] | [Yy][Ee][Ss])
             echo "Cleaning deployment."
-            kubectl delete deployments --all
-            kubectl delete services --all
-            kubectl delete pods --all
+            kubectl delete deployments -l app.kubernetes.io/part-of=askcos
+            kubectl delete services -l app.kubernetes.io/part-of=askcos
+            kubectl delete pods -l app.kubernetes.io/part-of=askcos
             ;;
           *)
             echo "Doing nothing."
