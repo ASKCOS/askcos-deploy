@@ -3,7 +3,9 @@ kind: Deployment
 metadata:
   name: template-relevance-reaxys
   labels:
-    app: template-relevance-reaxys
+    app.kubernetes.io/name: template-relevance-reaxys
+    app.kubernetes.io/component: tfserving
+    app.kubernetes.io/part-of: askcos
 spec:
   replicas: 1
   selector:
@@ -13,6 +15,9 @@ spec:
     metadata:
       labels:
         pod: template-relevance-reaxys
+        app.kubernetes.io/name: template-relevance-reaxys
+        app.kubernetes.io/component: tfserving
+        app.kubernetes.io/part-of: askcos
     spec:
       containers:
         - name: template-relevance-reaxys

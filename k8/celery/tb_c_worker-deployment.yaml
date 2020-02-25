@@ -3,9 +3,11 @@ kind: Deployment
 metadata:
   name: tb-c-worker
   labels:
-    app: tb-c-worker
+    app.kubernetes.io/name: tb-c-worker
+    app.kubernetes.io/component: celery
+    app.kubernetes.io/part-of: askcos
 spec:
-  replicas: 12
+  replicas: 1
   selector:
     matchLabels:
       pod: tb-c-worker
@@ -13,12 +15,15 @@ spec:
     metadata:
       labels:
         pod: tb-c-worker
+        app.kubernetes.io/name: tb-c-worker
+        app.kubernetes.io/component: celery
+        app.kubernetes.io/part-of: askcos
     spec:
       containers:
         - name: tb-c-worker
           image: registry.gitlab.com/mlpds_mit/askcos/askcos:0.4.1
           command: ["/bin/bash"]
-          args: ["-c", "celery -A askcos_site worker -c 1 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent --without-heartbeat"]
+          args: ["-c", "celery -A askcos_site worker -c 12 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent"]
           envFrom:
             - configMapRef:
                 name: django-config
