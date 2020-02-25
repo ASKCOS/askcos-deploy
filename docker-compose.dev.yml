@@ -9,7 +9,7 @@ services:
       - '~/Code/ASKCOS/askcos/askcos_site:/usr/local/ASKCOS/askcos/askcos_site'
 
   tffp_worker:
-    image: registry.gitlab.com/mlpds_mit/askcos/askcos:${VERSION:-2020.04}
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
     command: bash -c "celery -A askcos_site worker -c 1 -Q tffp_worker -n tffp_worker@%h --pool=gevent"
 
   cr_network_worker:
