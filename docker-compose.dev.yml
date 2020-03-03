@@ -8,17 +8,9 @@ services:
       - 'staticdata:/usr/local/ASKCOS/askcos/askcos_site/static'
       - '~/Code/ASKCOS/askcos/askcos_site:/usr/local/ASKCOS/askcos/askcos_site'
 
-  te_coordinator:
+  tffp_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
-    command: bash -c "celery -A askcos_site worker -c 1 -Q te_coordinator -n te_coordinator@%h"
-
-  sc_coordinator:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
-    command: bash -c "celery -A askcos_site worker -c 1 -Q sc_coordinator -n sc_coordinator@%h --pool gevent"
-
-  ft_worker:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
-    command: bash -c "celery -A askcos_site worker -c 1 -Q ft_worker -n ft_worker@%h"
+    command: bash -c "celery -A askcos_site worker -c 1 -Q tffp_worker -n tffp_worker@%h --pool=gevent"
 
   cr_network_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
