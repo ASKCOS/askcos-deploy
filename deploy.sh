@@ -140,15 +140,10 @@ done
 # Set positional arguments in their proper place
 eval set -- "$COMMANDS"
 
-# Retrieve image build date for website footer
-UPDATE_DATE=$(docker inspect -f '{{ .Created }}' ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER})
-UPDATE_DATE=${UPDATE_DATE%T*}  # cut off time, only keeping date
-
 # Export variables needed by docker-compose
 export VERSION_NUMBER
 export COMPOSE_FILE
 export COMPOSE_PROJECT_NAME
-export UPDATE_DATE
 
 # Define various functions
 clean-static() {
@@ -293,8 +288,16 @@ create-ssl() {
   fi
 }
 
+get-image-date() {
+  # Retrieve image build date for website footer
+  UPDATE_DATE=$(docker inspect -f '{{ .Created }}' ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER})
+  UPDATE_DATE=${UPDATE_DATE%T*}  # cut off time, only keeping date
+  export UPDATE_DATE
+}
+
 start-web-services() {
   echo "Starting web services..."
+  get-image-date
   docker-compose up -d --remove-orphans nginx app
   echo "Start up complete."
   echo
