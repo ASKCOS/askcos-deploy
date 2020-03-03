@@ -13,3 +13,7 @@ askcos.ssl.key
 # ignore pycharm folder
 .idea/
 
+# ignore deployment specific configuration files
+.env
+customization
+nginx.conf

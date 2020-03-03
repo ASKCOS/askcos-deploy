@@ -55,6 +55,14 @@ n_impurity_worker=1      # Impurity worker
 n_atom_mapping_worker=1  # Atom mapping worker
 n_tffp_worker=1          # Templat-free forward predictor worker
 
+# Create environment variable files from examples if they don't exist
+if [ ! -f ".env" ]; then
+  cp .env.example .env
+fi
+if [ ! -f "customization" ]; then
+  cp customization.example customization
+fi
+
 # Get docker compose variables from .env
 source .env
 
