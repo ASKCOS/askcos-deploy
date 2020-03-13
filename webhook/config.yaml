@@ -1,0 +1,5 @@
+---
+# askcos repository
+ASKCOS:
+  command: ['bash', '/askcos/webhook-listener/gitlab-webhook-receiver/deploy.sh']
+  gitlab_token: 'place token here'
