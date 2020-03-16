@@ -72,7 +72,7 @@ CHEMICALS=""
 REACTIONS=""
 RETRO_TEMPLATES=""
 FORWARD_TEMPLATES=""
-DB_APPEND=false
+DB_DROP="--drop"
 
 COMMANDS=""
 while (( "$#" )); do
@@ -124,7 +124,7 @@ while (( "$#" )); do
       shift 2
       ;;
     -a|--append)
-      DB_APPEND=true
+      DB_DROP=""
       shift 1
       ;;
     --) # end argument parsing
@@ -144,12 +144,6 @@ done
 
 # Set positional arguments in their proper place
 eval set -- "$COMMANDS"
-
-if $DB_APPEND; then
-  DB_DROP=''
-else
-  DB_DROP='--drop'
-fi
 
 # Export variables needed by docker-compose
 export VERSION_NUMBER
