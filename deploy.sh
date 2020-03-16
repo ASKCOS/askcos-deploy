@@ -72,6 +72,7 @@ CHEMICALS=""
 REACTIONS=""
 RETRO_TEMPLATES=""
 FORWARD_TEMPLATES=""
+DB_DROP="--drop"
 
 COMMANDS=""
 while (( "$#" )); do
@@ -121,6 +122,10 @@ while (( "$#" )); do
     -t|--forward-templates)
       FORWARD_TEMPLATES=$2
       shift 2
+      ;;
+    -a|--append)
+      DB_DROP=""
+      shift 1
       ;;
     --) # end argument parsing
       shift
@@ -180,7 +185,7 @@ seed-db-collection() {
   # arg 1 is collection name
   # arg 2 is file path
   # arg 3 is a flag to pass to docker-compose exec, e.g. -d to detach
-  docker-compose exec -T $3 mongo bash -c 'gunzip -c '$2' | mongoimport --host ${MONGO_HOST} --username ${MONGO_USER} --password ${MONGO_PW} --authenticationDatabase admin --db askcos --collection '$1' --type json --jsonArray --drop'
+  docker-compose exec -T $3 mongo bash -c 'gunzip -c '$2' | mongoimport --host ${MONGO_HOST} --username ${MONGO_USER} --password ${MONGO_PW} --authenticationDatabase admin --db askcos --collection '$1' --type json --jsonArray '${DB_DROP}
 }
 
 seed-db() {
