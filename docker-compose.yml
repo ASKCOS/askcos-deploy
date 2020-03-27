@@ -49,7 +49,7 @@ services:
     expose:
       - '8000'
     volumes:
-      - 'staticdata:/usr/local/ASKCOS/askcos/askcos_site/static'
+      - 'staticdata:/usr/local/ASKCOS/askcos/static'
       - 'appdata:/usr/local/ASKCOS/makeit/data'
 
   cr_network_worker:
