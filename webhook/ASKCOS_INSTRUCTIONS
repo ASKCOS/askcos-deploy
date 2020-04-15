@@ -1,0 +1,8 @@
+This directory contains a webhook listener script to trigger continuous deployment of the askcos-demo site.
+
+The listener script is derived from https://github.com/pstauffer/gitlab-webhook-receiver with modifications.
+
+To start the listener, run the following:
+
+python gitlab-webhook-receiver.py --addr <ip address to listen> --port <port to listen> &> listener.log
+
