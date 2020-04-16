@@ -36,6 +36,7 @@ usage() {
   echo "    -t,--forward-templates    forward template data for reseeding mongo database"
   echo "    -d,--dev                  use docker-compose configuration for development (fewer workers)"
   echo "    -p,--project-name         specify project name to be used for services (prefix for docker container names)"
+  echo "    -l,--local                use locally available docker images instead of pulling new image"
   echo
   echo "Examples:"
   echo "    bash deploy.sh deploy -f docker-compose.yml"
@@ -73,6 +74,7 @@ REACTIONS=""
 RETRO_TEMPLATES=""
 FORWARD_TEMPLATES=""
 DB_DROP="--drop"
+LOCAL=false
 
 COMMANDS=""
 while (( "$#" )); do
@@ -92,6 +94,10 @@ while (( "$#" )); do
     -p|--project-name)
       COMPOSE_PROJECT_NAME=$2
       shift 2
+      ;;
+    -l|--local)
+      LOCAL=true
+      shift 1
       ;;
     -d|--dev)
       COMPOSE_FILE="docker-compose.yml:docker-compose.dev.yml"
@@ -151,10 +157,11 @@ export COMPOSE_FILE
 export COMPOSE_PROJECT_NAME
 
 # Define various functions
-clean-static() {
-  echo "Cleaning up old static file volume..."
-  docker-compose stop app nginx
-  docker-compose rm -f app nginx
+clean-data() {
+  echo "Cleaning up application data volumes..."
+  docker-compose stop app mongo nginx
+  docker-compose rm -f app mongo nginx
+  docker volume rm ${COMPOSE_PROJECT_NAME}_appdata
   docker volume rm ${COMPOSE_PROJECT_NAME}_staticdata
   echo "Clean up complete."
   echo
@@ -350,7 +357,7 @@ else
   for arg in "$@"
   do
     case "$arg" in
-      clean-static | start-db-services | seed-db | copy-http-conf | copy-https-conf | create-ssl | \
+      clean-data | start-db-services | seed-db | copy-http-conf | copy-https-conf | create-ssl | \
       start-web-services | start-tf-server | start-celery-workers | migrate | set-db-defaults | count-mongo-docs)
         # This is a defined function, so execute it
         $arg
@@ -380,8 +387,10 @@ else
         ;;
       update)
         # Update an existing configuration, database seeding is not performed
-        docker pull ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
-        clean-static
+        if [ "$LOCAL" = "false" ]; then
+          docker pull ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+        fi
+        clean-data
         start-db-services
         start-web-services
         start-tf-server
