@@ -36,6 +36,7 @@ usage() {
   echo "    -t,--forward-templates    forward template data for reseeding mongo database"
   echo "    -d,--dev                  use docker-compose configuration for development (fewer workers)"
   echo "    -p,--project-name         specify project name to be used for services (prefix for docker container names)"
+  echo "    -l,--local                use locally available docker images instead of pulling new image"
   echo
   echo "Examples:"
   echo "    bash deploy.sh deploy -f docker-compose.yml"
@@ -73,6 +74,7 @@ REACTIONS=""
 RETRO_TEMPLATES=""
 FORWARD_TEMPLATES=""
 DB_DROP="--drop"
+LOCAL=false
 
 COMMANDS=""
 while (( "$#" )); do
@@ -92,6 +94,10 @@ while (( "$#" )); do
     -p|--project-name)
       COMPOSE_PROJECT_NAME=$2
       shift 2
+      ;;
+    -l|--local)
+      LOCAL=true
+      shift 1
       ;;
     -d|--dev)
       COMPOSE_FILE="docker-compose.yml:docker-compose.dev.yml"
@@ -381,7 +387,9 @@ else
         ;;
       update)
         # Update an existing configuration, database seeding is not performed
-        docker pull ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+        if [ "$LOCAL" = "false" ]; then
+          docker pull ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+        fi
         clean-data
         start-db-services
         start-web-services
