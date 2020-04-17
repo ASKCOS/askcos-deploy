@@ -64,7 +64,7 @@ services:
     restart: always
     env_file:
       - .env
-    command: bash -c "celery -A askcos_site worker -c 2 -Q tb_coordinator_mcts -n tb_coordinator_mcts@%h --pool=gevent --without-heartbeat"
+    command: bash -c "celery -A askcos_site worker -c 1 -Q tb_coordinator_mcts -n tb_coordinator_mcts@%h --pool=gevent --without-heartbeat"
 
   tb_c_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
