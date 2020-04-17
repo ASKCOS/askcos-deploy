@@ -130,7 +130,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('workers', nargs='*', help='names of specific workers to check and restart')
 
-    parser.add_argument('--host', nargs=1, default='localhost', help='hostname for deployment, e.g. askcos.mit.edu')
+    parser.add_argument('--host', nargs=1, help='hostname for deployment, e.g. askcos.mit.edu')
     parser.add_argument('-n', '--no-restart', action='store_false', help='do not restart containers, only check health')
     parser.add_argument('-v', '--version', nargs=1, help='docker image version to use when restarting')
     parser.add_argument('-d', '--project-directory', nargs=1, help='askcos-deploy directory (Compose file location)')
@@ -139,7 +139,7 @@ def main():
 
     args = parser.parse_args()
     workers = args.workers
-    host = args.host[0] if args.host is not None else None
+    host = args.host[0] if args.host is not None else 'localhost'
     restart = args.no_restart
     version = args.version
     directory = args.project_directory
