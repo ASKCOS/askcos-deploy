@@ -165,31 +165,31 @@ def main():
         print('Worker {0} {1}.'.format(worker, states[status]))
 
     if restart:
-        print('Restarting workers...')
         restart_list = [worker for worker, status in results.items() if status == 1]
+        if restart_list:
+            print('Restarting workers...')
+            command = ['docker-compose', 'up', '--detach', '--force-recreate']
 
-        command = ['docker-compose', 'up', '--detach', '--force-recreate']
+            for worker in restart_list:
+                scale = scales.get(worker)
+                if scale is not None:
+                    command.extend(['--scale', '{0}={1}'.format(worker, scale)])
 
-        for worker in restart_list:
-            scale = scales.get(worker)
-            if scale is not None:
-                command.extend(['--scale', '{0}={1}'.format(worker, scale)])
+            command.extend(restart_list)
 
-        command.extend(restart_list)
+            env = os.environ.copy()
+            if version is not None:
+                env['VERSION_NUMBER'] = version[0]
 
-        env = os.environ.copy()
-        if version is not None:
-            env['VERSION_NUMBER'] = version[0]
+            wd = None
+            if directory is not None:
+                wd = directory[0]
 
-        wd = None
-        if directory is not None:
-            wd = directory[0]
-
-        result = subprocess.run(command, env=env, cwd=wd)
-        if result.returncode == 0:
-            print('Done.')
-        else:
-            print('Unable to restart workers.')
+            result = subprocess.run(command, env=env, cwd=wd)
+            if result.returncode == 0:
+                print('Done.')
+            else:
+                print('Unable to restart workers.')
 
 
 if __name__ == '__main__':
