@@ -48,7 +48,7 @@ usage() {
 
 # Worker scales (i.e. number of celery workers)
 n_cr_network_worker=1    # Context recommender neural network worker
-n_tb_coordinator_mcts=1  # Tree builder coordinator
+n_tb_coordinator_mcts=2  # Tree builder coordinator
 n_tb_c_worker=1          # Tree builder chiral worker
 n_tb_c_worker_preload=1  # Tree builder chiral worker with template preloading
 n_sites_worker=1         # Site selectivity worker
