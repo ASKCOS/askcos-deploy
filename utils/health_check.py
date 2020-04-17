@@ -6,6 +6,26 @@ using the web API. If the task fails, the script can automatically restart
 the docker container which hosts the worker. If the task succeeds or times out,
 no further action is taken, since timeouts could be caused by the presence of
 other tasks in the queue.
+
+Usage:
+
+    # Basic case, execute from root askcos-deploy directory
+    python util/health_check.py
+
+    # Specify host url for askcos deployment (default is https://localhost)
+    python util/health_check.py --host https://mysite.com
+
+    # Execute from another directory (must provide path to askcos-deploy)
+    python /path/to/health_check.py --project-directory /path/to/askcos-deploy
+
+    # Only perform health check and do not restart containers
+    python util/health_check.py --no-restart
+
+    # Specify particular service to check and restart
+    python util/health_check.py tb_coordinator_mcts
+
+    # Specify scale for particular service when restarting
+    python util/health_check.py --scale tb_coordinator_mcts=2
 """
 
 import argparse
@@ -119,7 +139,7 @@ def main():
 
     args = parser.parse_args()
     workers = args.workers
-    host = args.host
+    host = args.host[0] if args.host is not None else None
     restart = args.no_restart
     version = args.version
     directory = args.project_directory
