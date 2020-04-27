@@ -87,6 +87,13 @@ services:
       - .env
     command: bash -c "celery -A askcos_site worker -c 1 -Q sites_worker --pool=gevent -n sites_worker@%h"
 
+  selec_worker:
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+    restart: always
+    env_file:
+      - .env
+    command: bash -c "celery -A askcos_site worker -c 1 -Q selec_worker --pool=gevent -n selec_worker@%h"
+
   impurity_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
     restart: always
