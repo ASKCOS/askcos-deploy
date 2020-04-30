@@ -34,7 +34,6 @@ usage() {
   echo "    -x,--reactions            reactions data for reseeding mongo database"
   echo "    -r,--retro-templates      retrosynthetic template data for reseeding mongo database"
   echo "    -t,--forward-templates    forward template data for reseeding mongo database"
-  echo "    -d,--dev                  use docker-compose configuration for development (fewer workers)"
   echo "    -p,--project-name         specify project name to be used for services (prefix for docker container names)"
   echo "    -l,--local                use locally available docker images instead of pulling new image"
   echo
@@ -50,7 +49,6 @@ usage() {
 n_cr_network_worker=1    # Context recommender neural network worker
 n_tb_coordinator_mcts=2  # Tree builder coordinator
 n_tb_c_worker=1          # Tree builder chiral worker
-n_tb_c_worker_preload=0  # Tree builder chiral worker with template preloading
 n_sites_worker=1         # Site selectivity worker
 n_impurity_worker=1      # Impurity worker
 n_atom_mapping_worker=1  # Atom mapping worker
@@ -98,12 +96,6 @@ while (( "$#" )); do
       ;;
     -l|--local)
       LOCAL=true
-      shift 1
-      ;;
-    -d|--dev)
-      COMPOSE_FILE="docker-compose.yml:docker-compose.dev.yml"
-      n_tb_coordinator_mcts=1  # Tree builder coordinator
-      n_tb_c_worker=1          # Tree builder chiral worker
       shift 1
       ;;
     -v|--version)
@@ -328,14 +320,13 @@ start-celery-workers() {
   docker-compose up -d --scale cr_network_worker=$n_cr_network_worker \
                        --scale tb_coordinator_mcts=$n_tb_coordinator_mcts \
                        --scale tb_c_worker=$n_tb_c_worker \
-                       --scale tb_c_worker_preload=$n_tb_c_worker_preload \
                        --scale sites_worker=$n_sites_worker \
                        --scale selec_worker=$n_selec_worker \
                        --scale impurity_worker=$n_impurity_worker \
                        --scale atom_mapping_worker=$n_atom_mapping_worker \
                        --scale tffp_worker=$n_tffp_worker \
                        --remove-orphans \
-                       cr_network_worker tb_coordinator_mcts tb_c_worker tb_c_worker_preload \
+                       cr_network_worker tb_coordinator_mcts tb_c_worker \
                        sites_worker selec_worker impurity_worker atom_mapping_worker tffp_worker
   echo "Start up complete."
   echo
