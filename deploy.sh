@@ -50,7 +50,6 @@ usage() {
 n_cr_network_worker=1    # Context recommender neural network worker
 n_tb_coordinator_mcts=2  # Tree builder coordinator
 n_tb_c_worker=1          # Tree builder chiral worker
-n_tb_c_worker_preload=0  # Tree builder chiral worker with template preloading
 n_sites_worker=1         # Site selectivity worker
 n_impurity_worker=1      # Impurity worker
 n_atom_mapping_worker=1  # Atom mapping worker
@@ -328,14 +327,13 @@ start-celery-workers() {
   docker-compose up -d --scale cr_network_worker=$n_cr_network_worker \
                        --scale tb_coordinator_mcts=$n_tb_coordinator_mcts \
                        --scale tb_c_worker=$n_tb_c_worker \
-                       --scale tb_c_worker_preload=$n_tb_c_worker_preload \
                        --scale sites_worker=$n_sites_worker \
                        --scale selec_worker=$n_selec_worker \
                        --scale impurity_worker=$n_impurity_worker \
                        --scale atom_mapping_worker=$n_atom_mapping_worker \
                        --scale tffp_worker=$n_tffp_worker \
                        --remove-orphans \
-                       cr_network_worker tb_coordinator_mcts tb_c_worker tb_c_worker_preload \
+                       cr_network_worker tb_coordinator_mcts tb_c_worker \
                        sites_worker selec_worker impurity_worker atom_mapping_worker tffp_worker
   echo "Start up complete."
   echo

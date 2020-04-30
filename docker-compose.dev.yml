@@ -24,10 +24,6 @@ services:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
     command: bash -c "celery -A askcos_site worker -c 1 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent --without-heartbeat"
 
-  tb_c_worker_preload:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
-    command: bash -c "celery -A askcos_site worker -c 1 -Q tb_c_worker_preload -n tb_c_worker_preload@%h"
-
   sites_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos:0.4.0
     command: bash -c "celery -A askcos_site worker -c 1 -Q sites_worker --pool=gevent -n sites_worker@%h"

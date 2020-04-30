@@ -73,13 +73,6 @@ services:
       - .env
     command: bash -c "celery -A askcos_site worker -c 12 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent"
 
-  tb_c_worker_preload:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
-    restart: always
-    env_file:
-      - .env
-    command: bash -c "celery -A askcos_site worker -c 1 -Q tb_c_worker_preload -n tb_c_worker_preload@%h"
-
   sites_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos:0.4.0
     restart: always
