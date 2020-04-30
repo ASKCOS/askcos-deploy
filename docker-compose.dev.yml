@@ -6,7 +6,6 @@ services:
     command: bash -c "uwsgi --socket :8000 --master --processes=2 --wsgi-file /usr/local/ASKCOS/askcos/wsgi.py"
     volumes:
       - 'staticdata:/usr/local/ASKCOS/askcos/askcos_site/static'
-      - '~/Code/ASKCOS/askcos/askcos_site:/usr/local/ASKCOS/askcos/askcos_site'
 
   tffp_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
