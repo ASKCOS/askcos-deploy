@@ -1,29 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: te-coordinator
+  name: tffp-worker
   labels:
-    app.kubernetes.io/name: te-coordinator
+    app.kubernetes.io/name: tffp-worker
     app.kubernetes.io/component: celery
     app.kubernetes.io/part-of: askcos
 spec:
   replicas: 1
   selector:
     matchLabels:
-      pod: te-coordinator
+      pod: tffp-worker
   template:
     metadata:
       labels:
-        pod: te-coordinator
-        app.kubernetes.io/name: te-coordinator
+        pod: tffp-worker
+        app.kubernetes.io/name: tffp-worker
         app.kubernetes.io/component: celery
         app.kubernetes.io/part-of: askcos
     spec:
       containers:
-        - name: te-coordinator
+        - name: tffp-worker
           image: registry.gitlab.com/mlpds_mit/askcos/askcos:0.4.1
           command: ["/bin/bash"]
-          args: ["-c", "celery -A askcos_site worker -c 2 -Q te_coordinator -n te_coordinator@%h"]
+          args: ["-c", "celery -A askcos_site worker -c 5 -Q tffp_worker --pool=gevent -n tffp_worker@%h"]
           envFrom:
             - configMapRef:
                 name: django-config

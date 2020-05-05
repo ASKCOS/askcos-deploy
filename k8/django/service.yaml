@@ -4,7 +4,9 @@ metadata:
   name: django
   namespace: default
   labels:
-    app: django
+    app.kubernetes.io/name: django
+    app.kubernetes.io/component: web
+    app.kubernetes.io/part-of: askcos
 spec:
   ports:
   - name: nginx

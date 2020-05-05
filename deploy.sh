@@ -34,7 +34,8 @@ usage() {
   echo "    -x,--reactions            reactions data for reseeding mongo database"
   echo "    -r,--retro-templates      retrosynthetic template data for reseeding mongo database"
   echo "    -t,--forward-templates    forward template data for reseeding mongo database"
-  echo "    -d,--dev                  use docker-compose configuration for development (fewer workers)"
+  echo "    -p,--project-name         specify project name to be used for services (prefix for docker container names)"
+  echo "    -l,--local                use locally available docker images instead of pulling new image"
   echo
   echo "Examples:"
   echo "    bash deploy.sh deploy -f docker-compose.yml"
@@ -45,25 +46,34 @@ usage() {
 }
 
 # Worker scales (i.e. number of celery workers)
-n_te_coordinator=1       # Tree evaluation coordinator
-n_sc_coordinator=1       # Scoring coordinator
-n_ft_worker=1            # Forward transformer worker
 n_cr_network_worker=1    # Context recommender neural network worker
-n_tb_coordinator_mcts=1  # Tree builder coordinator
+n_tb_coordinator_mcts=2  # Tree builder coordinator
 n_tb_c_worker=1          # Tree builder chiral worker
-n_tb_c_worker_preload=1  # Tree builder chiral worker with template preloading
 n_sites_worker=1         # Site selectivity worker
 n_impurity_worker=1      # Impurity worker
 n_atom_mapping_worker=1  # Atom mapping worker
+n_tffp_worker=1          # Templat-free forward predictor worker
+n_selec_worker=1        # General selectivity worker
+
+# Create environment variable files from examples if they don't exist
+if [ ! -f ".env" ]; then
+  cp .env.example .env
+fi
+if [ ! -f "customization" ]; then
+  cp customization.example customization
+fi
+
+# Get docker compose variables from .env
+source .env
 
 # Default argument values
-COMPOSE_FILE=""
-VERSION=""
 BUYABLES=""
 CHEMICALS=""
 REACTIONS=""
 RETRO_TEMPLATES=""
 FORWARD_TEMPLATES=""
+DB_DROP="--drop"
+LOCAL=false
 
 COMMANDS=""
 while (( "$#" )); do
@@ -80,14 +90,16 @@ while (( "$#" )); do
       fi
       shift 2
       ;;
-    -d|--dev)
-      COMPOSE_FILE="docker-compose.yml:docker-compose.dev.yml"
-      n_tb_coordinator_mcts=1  # Tree builder coordinator
-      n_tb_c_worker=1          # Tree builder chiral worker
+    -p|--project-name)
+      COMPOSE_PROJECT_NAME=$2
+      shift 2
+      ;;
+    -l|--local)
+      LOCAL=true
       shift 1
       ;;
     -v|--version)
-      VERSION=$2
+      VERSION_NUMBER=$2
       shift 2
       ;;
     -b|--buyables)
@@ -110,6 +122,10 @@ while (( "$#" )); do
       FORWARD_TEMPLATES=$2
       shift 2
       ;;
+    -a|--append)
+      DB_DROP=""
+      shift 1
+      ;;
     --) # end argument parsing
       shift
       break
@@ -128,16 +144,18 @@ done
 # Set positional arguments in their proper place
 eval set -- "$COMMANDS"
 
-# Export VERSION and COMPOSE_FILE so they're available to docker-compose
-export VERSION
+# Export variables needed by docker-compose
+export VERSION_NUMBER
 export COMPOSE_FILE
+export COMPOSE_PROJECT_NAME
 
 # Define various functions
-clean-static() {
-  echo "Cleaning up old static file volume..."
-  docker-compose stop app nginx
-  docker-compose rm -f app nginx
-  docker volume rm deploy_staticdata
+clean-data() {
+  echo "Cleaning up application data volumes..."
+  docker-compose stop app mongo nginx
+  docker-compose rm -f app mongo nginx
+  docker volume rm ${COMPOSE_PROJECT_NAME}_appdata
+  docker volume rm ${COMPOSE_PROJECT_NAME}_staticdata
   echo "Clean up complete."
   echo
 }
@@ -160,14 +178,14 @@ set-db-defaults() {
 
 run-mongo-js() {
   # arg 1 is js command
-  docker-compose exec mongo bash -c 'mongo --username ${MONGO_USER} --password ${MONGO_PW} --authenticationDatabase admin ${MONGO_HOST}/askcos --quiet --eval '"'$1'"
+  docker-compose exec -T mongo bash -c 'mongo --username ${MONGO_USER} --password ${MONGO_PW} --authenticationDatabase admin ${MONGO_HOST}/askcos --quiet --eval '"'$1'"
 }
 
 seed-db-collection() {
   # arg 1 is collection name
   # arg 2 is file path
   # arg 3 is a flag to pass to docker-compose exec, e.g. -d to detach
-  docker-compose exec $3 mongo bash -c 'gunzip -c '$2' | mongoimport --host ${MONGO_HOST} --username ${MONGO_USER} --password ${MONGO_PW} --authenticationDatabase admin --db askcos --collection '$1' --type json --jsonArray --drop'
+  docker-compose exec -T $3 mongo bash -c 'gunzip -c '$2' | mongoimport --host ${MONGO_HOST} --username ${MONGO_USER} --password ${MONGO_PW} --authenticationDatabase admin --db askcos --collection '$1' --type json --jsonArray '${DB_DROP}
 }
 
 seed-db() {
@@ -275,8 +293,16 @@ create-ssl() {
   fi
 }
 
+get-image-date() {
+  # Retrieve image build date for website footer
+  UPDATE_DATE=$(docker inspect -f '{{ .Created }}' ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER})
+  UPDATE_DATE=${UPDATE_DATE%T*}  # cut off time, only keeping date
+  export UPDATE_DATE
+}
+
 start-web-services() {
   echo "Starting web services..."
+  get-image-date
   docker-compose up -d --remove-orphans nginx app
   echo "Start up complete."
   echo
@@ -291,27 +317,25 @@ start-tf-server() {
 
 start-celery-workers() {
   echo "Starting celery workers..."
-  docker-compose up -d --scale te_coordinator=$n_te_coordinator \
-                       --scale sc_coordinator=$n_sc_coordinator \
-                       --scale ft_worker=$n_ft_worker \
-                       --scale cr_network_worker=$n_cr_network_worker \
+  docker-compose up -d --scale cr_network_worker=$n_cr_network_worker \
                        --scale tb_coordinator_mcts=$n_tb_coordinator_mcts \
                        --scale tb_c_worker=$n_tb_c_worker \
-                       --scale tb_c_worker_preload=$n_tb_c_worker_preload \
                        --scale sites_worker=$n_sites_worker \
+                       --scale selec_worker=$n_selec_worker \
                        --scale impurity_worker=$n_impurity_worker \
                        --scale atom_mapping_worker=$n_atom_mapping_worker \
+                       --scale tffp_worker=$n_tffp_worker \
                        --remove-orphans \
-                       te_coordinator sc_coordinator ft_worker cr_network_worker tb_coordinator_mcts \
-                       tb_c_worker tb_c_worker_preload sites_worker impurity_worker atom_mapping_worker
+                       cr_network_worker tb_coordinator_mcts tb_c_worker \
+                       sites_worker selec_worker impurity_worker atom_mapping_worker tffp_worker
   echo "Start up complete."
   echo
 }
 
 migrate() {
   echo "Migrating user database..."
-  docker-compose exec app bash -c "python /usr/local/ASKCOS/askcos/manage.py makemigrations main"
-  docker-compose exec app bash -c "python /usr/local/ASKCOS/askcos/manage.py migrate"
+  docker-compose exec -T app bash -c "python /usr/local/ASKCOS/askcos/manage.py makemigrations main"
+  docker-compose exec -T app bash -c "python /usr/local/ASKCOS/askcos/manage.py migrate"
   echo "Migration complete."
   echo
 }
@@ -326,7 +350,7 @@ else
   for arg in "$@"
   do
     case "$arg" in
-      clean-static | start-db-services | seed-db | copy-http-conf | copy-https-conf | create-ssl | \
+      clean-data | start-db-services | seed-db | copy-http-conf | copy-https-conf | create-ssl | \
       start-web-services | start-tf-server | start-celery-workers | migrate | set-db-defaults | count-mongo-docs)
         # This is a defined function, so execute it
         $arg
@@ -356,8 +380,10 @@ else
         ;;
       update)
         # Update an existing configuration, database seeding is not performed
-        docker pull registry.gitlab.com/mlpds_mit/askcos/askcos:"$VERSION"
-        clean-static
+        if [ "$LOCAL" = "false" ]; then
+          docker pull ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+        fi
+        clean-data
         start-db-services
         start-web-services
         start-tf-server

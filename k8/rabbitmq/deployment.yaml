@@ -2,6 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rabbit
+  labels:
+    app.kubernetes.io/name: rabbit
+    app.kubernetes.io/component: message
+    app.kubernetes.io/part-of: askcos
 spec:
   selector:
     matchLabels:
@@ -11,6 +15,9 @@ spec:
     metadata:
       labels:
         pod: rabbit
+        app.kubernetes.io/name: rabbit
+        app.kubernetes.io/component: message
+        app.kubernetes.io/part-of: askcos
     spec:
       containers:
       - name: rabbit

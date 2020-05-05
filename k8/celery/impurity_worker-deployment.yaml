@@ -3,7 +3,9 @@ kind: Deployment
 metadata:
   name: impurity-worker
   labels:
-    app: impurity-worker
+    app.kubernetes.io/name: impurity-worker
+    app.kubernetes.io/component: celery
+    app.kubernetes.io/part-of: askcos
 spec:
   replicas: 1
   selector:
@@ -13,6 +15,9 @@ spec:
     metadata:
       labels:
         pod: impurity-worker
+        app.kubernetes.io/name: impurity-worker
+        app.kubernetes.io/component: celery
+        app.kubernetes.io/part-of: askcos
     spec:
       containers:
         - name: impurity-worker

@@ -1,0 +1,15 @@
+# ########################################
+# Local Deployment Customization Variables
+# ########################################
+
+# Organization name, displayed next to ASKCOS logo in header
+ORGANIZATION=
+
+# Contact email, used in support pop-up dialog
+CONTACT_EMAIL=mlpds_support@mit.edu
+
+# Sets default for SMILES resolver in interactive path planner, which sends data to NIH NCI
+ALLOW_SMILES_RESOLVER=
+
+# Sets whether authorization is necessary to modify buyables database
+AUTH_MODIFY_BUYABLES=False

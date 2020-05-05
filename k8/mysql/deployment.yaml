@@ -2,6 +2,10 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mysql
+  labels:
+    app.kubernetes.io/name: mysql
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: askcos
 spec:
   selector:
     matchLabels:
@@ -12,6 +16,9 @@ spec:
     metadata:
       labels:
         pod: mysql
+        app.kubernetes.io/name: mysql
+        app.kubernetes.io/component: database
+        app.kubernetes.io/part-of: askcos
     spec:
       containers:
       - image: mysql:5.7

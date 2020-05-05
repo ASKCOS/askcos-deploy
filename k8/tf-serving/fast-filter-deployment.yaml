@@ -3,7 +3,9 @@ kind: Deployment
 metadata:
   name: fast-filter
   labels:
-    app: fast-filter
+    app.kubernetes.io/name: fast-filter
+    app.kubernetes.io/component: tfserving
+    app.kubernetes.io/part-of: askcos
 spec:
   replicas: 1
   selector:
@@ -13,6 +15,9 @@ spec:
     metadata:
       labels:
         pod: fast-filter
+        app.kubernetes.io/name: fast-filter
+        app.kubernetes.io/component: tfserving
+        app.kubernetes.io/part-of: askcos
     spec:
       containers:
         - name: fast-filter
