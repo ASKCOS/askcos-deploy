@@ -293,6 +293,12 @@ create-ssl() {
   fi
 }
 
+pull-images() {
+  if [ "$LOCAL" = "false" ]; then
+    docker pull ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+  fi
+}
+
 get-image-date() {
   # Retrieve image build date for website footer
   UPDATE_DATE=$(docker inspect -f '{{ .Created }}' ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER})
@@ -350,7 +356,7 @@ else
   for arg in "$@"
   do
     case "$arg" in
-      clean-data | start-db-services | seed-db | copy-http-conf | copy-https-conf | create-ssl | \
+      clean-data | start-db-services | seed-db | copy-http-conf | copy-https-conf | create-ssl | pull-images | \
       start-web-services | start-tf-server | start-celery-workers | migrate | set-db-defaults | count-mongo-docs)
         # This is a defined function, so execute it
         $arg
@@ -359,6 +365,7 @@ else
         # Normal first deployment, do everything
         copy-https-conf
         create-ssl
+        pull-images
         start-db-services
         start-web-services
         set-db-defaults
@@ -380,9 +387,7 @@ else
         ;;
       update)
         # Update an existing configuration, database seeding is not performed
-        if [ "$LOCAL" = "false" ]; then
-          docker pull ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
-        fi
+        pull-images
         clean-data
         start-db-services
         start-web-services
