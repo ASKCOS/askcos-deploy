@@ -377,6 +377,7 @@ else
       deploy-http)
         # Deploy with http, only difference is ssl cert creation and nginx conf
         copy-http-conf
+        pull-images
         start-db-services
         start-web-services
         set-db-defaults
