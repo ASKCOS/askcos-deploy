@@ -74,7 +74,7 @@ services:
     command: bash -c "celery -A askcos_site worker -c 12 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent"
 
   sites_worker:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos:0.4.0
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
     restart: always
     env_file:
       - .env
