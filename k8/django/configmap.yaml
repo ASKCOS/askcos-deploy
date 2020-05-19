@@ -18,7 +18,7 @@ data:
   MYSQL_DATABASE: askcos_db
   MYSQL_ROOT_PASSWORD: password
   MYSQL_USER: root
-  VERSION_NUMBER: "0.4.1"
+  VERSION_NUMBER: "2020.04"
   STATIC_URL: /static/
   ORGANIZATION: ""
   CONTACT_EMAIL: "mlpds_support@mit.edu"
