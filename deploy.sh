@@ -346,6 +346,39 @@ migrate() {
   echo
 }
 
+export_volume() {
+  volume=$1
+  directory=$2
+  filename=$3
+  volume_name=${COMPOSE_PROJECT_NAME}_${volume}
+  docker run --rm -v ${volume_name}:/src -v ${directory}:/dest alpine tar -czf /dest/${filename} /src
+}
+
+import_volume() {
+  volume=$1
+  directory=$2
+  filename=$3
+  volume_name=${COMPOSE_PROJECT_NAME}_${volume}
+  docker run --rm -v ${volume_name}:/dest -v ${directory}:/src alpine tar -xzf /src/${filename} -C /dest --strip 1
+}
+
+backup() {
+  backup_dir="$(pwd)/backup/$(date +%Y%m%d%s)"
+  mkdir -p ${backup_dir}
+  echo "Backing up data to ${backup_dir}..."
+  export_volume mongo_data ${backup_dir} mongo_data.tar.gz
+  export_volume mysql_data ${backup_dir} mysql_data.tar.gz
+  echo "Backup complete."
+}
+
+restore() {
+  backup_dir="$(pwd)/backup/$(ls -t backup | head -1)"
+  echo "Restoring data from ${backup_dir}..."
+  import_volume mongo_data ${backup_dir} mongo_data.tar.gz
+  import_volume mysql_data ${backup_dir} mysql_data.tar.gz
+  echo "Restore complete."
+}
+
 # Handle positional arguments, which should be commands
 if [ $# -eq 0 ]; then
   # No arguments
@@ -357,7 +390,8 @@ else
   do
     case "$arg" in
       clean-data | start-db-services | seed-db | copy-http-conf | copy-https-conf | create-ssl | pull-images | \
-      start-web-services | start-tf-server | start-celery-workers | migrate | set-db-defaults | count-mongo-docs)
+      start-web-services | start-tf-server | start-celery-workers | migrate | set-db-defaults | count-mongo-docs | \
+      backup | restore )
         # This is a defined function, so execute it
         $arg
         ;;
