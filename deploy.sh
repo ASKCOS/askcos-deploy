@@ -384,7 +384,8 @@ backup() {
     BACKUP_DIR="$(pwd)/backup/$(date +%Y%m%d%s)"
   fi
   mkdir -p ${BACKUP_DIR}
-  echo "Backing up data to ${BACKUP_DIR}..."
+  echo "Backing up data to ${BACKUP_DIR}"
+  echo "This may take a few minutes..."
   export_volume mongo_data ${BACKUP_DIR} mongo_data.tar.gz
   export_volume mysql_data ${BACKUP_DIR} mysql_data.tar.gz
   echo "Backup complete."
@@ -394,7 +395,8 @@ restore() {
   if [ -z "$BACKUP_DIR" ]; then
     BACKUP_DIR="$(pwd)/backup/$(ls -t backup | head -1)"
   fi
-  echo "Restoring data from ${BACKUP_DIR}..."
+  echo "Restoring data from ${BACKUP_DIR}"
+  echo "This may take a few minutes..."
   import_volume mongo_data ${BACKUP_DIR} mongo_data.tar.gz
   import_volume mysql_data ${BACKUP_DIR} mysql_data.tar.gz
   echo "Restore complete."
