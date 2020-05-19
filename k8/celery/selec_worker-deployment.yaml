@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selec-worker
+  labels:
+    app.kubernetes.io/name: selec-worker
+    app.kubernetes.io/component: celery
+    app.kubernetes.io/part-of: askcos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      pod: selec-worker
+  template:
+    metadata:
+      labels:
+        pod: selec-worker
+        app.kubernetes.io/name: selec-worker
+        app.kubernetes.io/component: celery
+        app.kubernetes.io/part-of: askcos
+    spec:
+      containers:
+        - name: selec-worker
+          image: registry.gitlab.com/mlpds_mit/askcos/askcos:2020.04
+          imagePullPolicy: Always
+          command: ["/bin/bash"]
+          args: ["-c", "celery -A askcos_site worker -c 1 -Q selec_worker --pool=gevent -n selec_worker@%h"]
+          envFrom:
+            - configMapRef:
+                name: django-config
+      imagePullSecrets:
+        - name: regcred
