@@ -293,6 +293,7 @@ copy-https-conf() {
   echo "Using https nginx configuration."
   cp nginx.https.conf nginx.conf
   echo
+  create-ssl
 }
 
 create-ssl() {
@@ -317,6 +318,12 @@ get-image-date() {
 }
 
 start-web-services() {
+  if [ ! -f "nginx.conf" ]; then
+    echo "Missing nginx configuration file (nginx.conf)!"
+    echo "Run 'bash deploy.sh copy-http-conf' or 'bash deploy.sh copy-https-conf' to create."
+    echo
+    exit 1
+  fi
   echo "Starting web services..."
   get-image-date
   docker-compose up -d --remove-orphans nginx app
@@ -412,7 +419,6 @@ else
       deploy)
         # Normal first deployment, do everything
         copy-https-conf
-        create-ssl
         pull-images
         start-db-services
         start-web-services
