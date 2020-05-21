@@ -25,6 +25,8 @@ usage() {
   echo "    start:                    (re)start an existing deployment"
   echo "    stop:                     stop a currently running deployment"
   echo "    clean:                    stop and remove a currently running deployment"
+  echo "    backup:                   export database data from docker volumes to .tar.gz files"
+  echo "    restore:                  import database data from .tar.gz files to docker volumes"
   echo
   echo "Optional arguments:"
   echo "    -f,--compose-file         specify docker-compose file(s) for deployment"
@@ -36,12 +38,15 @@ usage() {
   echo "    -t,--forward-templates    forward template data for reseeding mongo database"
   echo "    -p,--project-name         specify project name to be used for services (prefix for docker container names)"
   echo "    -l,--local                use locally available docker images instead of pulling new image"
+  echo "    -d,--backup-directory     specify absolute path to backup directory for backup and restore"
   echo
   echo "Examples:"
   echo "    bash deploy.sh deploy -f docker-compose.yml"
   echo "    bash deploy.sh update -v x.y.z"
   echo "    bash deploy.sh seed-db -r retro-templates.json.gz -b buyables.json.gz"
   echo "    bash deploy.sh clean"
+  echo "    bash deploy.sh backup -p my_project_name"
+  echo "    bash deploy.sh restore -d /absolute/path/to/backups/ "
   echo
 }
 
@@ -74,6 +79,7 @@ RETRO_TEMPLATES=""
 FORWARD_TEMPLATES=""
 DB_DROP="--drop"
 LOCAL=false
+BACKUP_DIR=""
 
 COMMANDS=""
 while (( "$#" )); do
@@ -125,6 +131,10 @@ while (( "$#" )); do
     -a|--append)
       DB_DROP=""
       shift 1
+      ;;
+    -d|--backup-directory)
+      BACKUP_DIR=$2
+      shift 2
       ;;
     --) # end argument parsing
       shift
@@ -283,6 +293,7 @@ copy-https-conf() {
   echo "Using https nginx configuration."
   cp nginx.https.conf nginx.conf
   echo
+  create-ssl
 }
 
 create-ssl() {
@@ -307,6 +318,12 @@ get-image-date() {
 }
 
 start-web-services() {
+  if [ ! -f "nginx.conf" ]; then
+    echo "Missing nginx configuration file (nginx.conf)!"
+    echo "Run 'bash deploy.sh copy-http-conf' or 'bash deploy.sh copy-https-conf' to create."
+    echo
+    exit 1
+  fi
   echo "Starting web services..."
   get-image-date
   docker-compose up -d --remove-orphans nginx app
@@ -346,6 +363,45 @@ migrate() {
   echo
 }
 
+export_volume() {
+  volume=$1
+  directory=$2
+  filename=$3
+  volume_name=${COMPOSE_PROJECT_NAME}_${volume}
+  docker run --rm -v ${volume_name}:/src -v ${directory}:/dest alpine tar -czf /dest/${filename} /src
+}
+
+import_volume() {
+  volume=$1
+  directory=$2
+  filename=$3
+  volume_name=${COMPOSE_PROJECT_NAME}_${volume}
+  docker run --rm -v ${volume_name}:/dest -v ${directory}:/src alpine tar -xzf /src/${filename} -C /dest --strip 1
+}
+
+backup() {
+  if [ -z "$BACKUP_DIR" ]; then
+    BACKUP_DIR="$(pwd)/backup/$(date +%Y%m%d%s)"
+  fi
+  mkdir -p ${BACKUP_DIR}
+  echo "Backing up data to ${BACKUP_DIR}"
+  echo "This may take a few minutes..."
+  export_volume mongo_data ${BACKUP_DIR} mongo_data.tar.gz
+  export_volume mysql_data ${BACKUP_DIR} mysql_data.tar.gz
+  echo "Backup complete."
+}
+
+restore() {
+  if [ -z "$BACKUP_DIR" ]; then
+    BACKUP_DIR="$(pwd)/backup/$(ls -t backup | head -1)"
+  fi
+  echo "Restoring data from ${BACKUP_DIR}"
+  echo "This may take a few minutes..."
+  import_volume mongo_data ${BACKUP_DIR} mongo_data.tar.gz
+  import_volume mysql_data ${BACKUP_DIR} mysql_data.tar.gz
+  echo "Restore complete."
+}
+
 # Handle positional arguments, which should be commands
 if [ $# -eq 0 ]; then
   # No arguments
@@ -357,14 +413,14 @@ else
   do
     case "$arg" in
       clean-data | start-db-services | seed-db | copy-http-conf | copy-https-conf | create-ssl | pull-images | \
-      start-web-services | start-tf-server | start-celery-workers | migrate | set-db-defaults | count-mongo-docs)
+      start-web-services | start-tf-server | start-celery-workers | migrate | set-db-defaults | count-mongo-docs | \
+      backup | restore )
         # This is a defined function, so execute it
         $arg
         ;;
       deploy)
         # Normal first deployment, do everything
         copy-https-conf
-        create-ssl
         pull-images
         start-db-services
         start-web-services
