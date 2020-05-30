@@ -8,7 +8,10 @@ ORGANIZATION=
 # Contact email, used in support pop-up dialog
 CONTACT_EMAIL=mlpds_support@mit.edu
 
-# Sets default for SMILES resolver in interactive path planner, which sends data to NIH NCI
+# Allows use of SMILES resolver in interactive path planner, which sends data to NIH NCI
+ENABLE_SMILES_RESOLVER=True
+
+# If ENABLE_SMILES_RESOLVER is True, sets the resolver's default toggle setting
 ALLOW_SMILES_RESOLVER=
 
 # Sets whether authorization is necessary to modify buyables database
