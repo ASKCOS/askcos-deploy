@@ -39,6 +39,8 @@ usage() {
   echo "    -p,--project-name         specify project name to be used for services (prefix for docker container names)"
   echo "    -l,--local                use locally available docker images instead of pulling new image"
   echo "    -d,--backup-directory     specify absolute path to backup directory for backup and restore"
+  echo "    -a|--append               append new documents when seeding database (instead of dropping old data)"
+  echo "    -i|--drop-indexes         drop any existing indexes when indexing database with index-db command"
   echo
   echo "Examples:"
   echo "    bash deploy.sh deploy -f docker-compose.yml"
@@ -78,6 +80,7 @@ REACTIONS=""
 RETRO_TEMPLATES=""
 FORWARD_TEMPLATES=""
 DB_DROP="--drop"
+DROP_INDEXES=false
 LOCAL=false
 BACKUP_DIR=""
 
@@ -130,6 +133,10 @@ while (( "$#" )); do
       ;;
     -a|--append)
       DB_DROP=""
+      shift 1
+      ;;
+    -i|--drop-indexes)
+      DROP_INDEXES=true
       shift 1
       ;;
     -d|--backup-directory)
@@ -214,27 +221,23 @@ seed-db() {
     echo "Loading default buyables data in background..."
     buyables_file="/data/app/buyables/buyables.json.gz"
     seed-db-collection buyables "$buyables_file" -d
-    run-mongo-js 'db.buyables.createIndex({smiles: "text"})'
   elif [ -n "$BUYABLES" ]; then
     echo "Loading buyables data from $BUYABLES in background..."
     buyables_file="/data/app/buyables/$(basename $BUYABLES)"
     docker cp "$BUYABLES" deploy_mongo_1:"$buyables_file"
     run-mongo-js "db.buyables.remove({})"
     seed-db-collection buyables "$buyables_file" -d
-    run-mongo-js 'db.buyables.createIndex({smiles: "text"})'
   fi
 
   if [ "$CHEMICALS" = "default" ]; then
     echo "Loading default chemicals data in background..."
     chemicals_file="/data/app/historian/chemicals.json.gz"
     seed-db-collection chemicals "$chemicals_file" -d
-    run-mongo-js 'db.chemicals.createIndex({smiles: "hashed"})'
   elif [ -n "$CHEMICALS" ]; then
     echo "Loading chemicals data from $CHEMICALS in background..."
     chemicals_file="/data/app/historian/$(basename $CHEMICALS)"
     docker cp "$CHEMICALS" deploy_mongo_1:"$chemicals_file"
     seed-db-collection chemicals "$chemicals_file" -d
-    run-mongo-js 'db.chemicals.createIndex({smiles: "hashed"})'
   fi
 
   if [ "$REACTIONS" = "default" ]; then
@@ -252,13 +255,11 @@ seed-db() {
     echo "Loading default retrosynthetic templates..."
     retro_file="/data/app/templates/retro.templates.json.gz"
     seed-db-collection retro_templates "$retro_file"
-    run-mongo-js 'db.retro_templates.createIndex({index: 1})'
   elif [ -n "$RETRO_TEMPLATES" ]; then
     echo "Loading retrosynthetic templates from $RETRO_TEMPLATES ..."
     retro_file="/data/app/templates/$(basename $RETRO_TEMPLATES)"
     docker cp "$RETRO_TEMPLATES" deploy_mongo_1:"$retro_file"
     seed-db-collection retro_templates "$retro_file"
-    run-mongo-js 'db.retro_templates.createIndex({index: 1})'
   fi
 
   if [ "$FORWARD_TEMPLATES" = "default" ]; then
@@ -272,7 +273,23 @@ seed-db() {
     seed-db-collection forward_templates "$forward_file"
   fi
 
+  index-db
   echo "Seeding complete."
+  echo
+}
+
+index-db() {
+  if [ "$DROP_INDEXES" = "true" ]; then
+    echo "Dropping existing indexes in mongo database..."
+    run-mongo-js 'db.buyables.dropIndexes()'
+    run-mongo-js 'db.chemicals.dropIndexes()'
+    run-mongo-js 'db.retro_templates.dropIndexes()'
+  fi
+  echo "Adding indexes to mongo database..."
+  run-mongo-js 'db.buyables.createIndex({smiles: 1, source: 1})'
+  run-mongo-js 'db.chemicals.createIndex({smiles: 1})'
+  run-mongo-js 'db.retro_templates.createIndex({index: 1, template_set: 1})'
+  echo "Indexing complete."
   echo
 }
 
@@ -414,7 +431,7 @@ else
     case "$arg" in
       clean-data | start-db-services | seed-db | copy-http-conf | copy-https-conf | create-ssl | pull-images | \
       start-web-services | start-tf-server | start-celery-workers | migrate | set-db-defaults | count-mongo-docs | \
-      backup | restore )
+      backup | restore | index-db )
         # This is a defined function, so execute it
         $arg
         ;;
