@@ -41,6 +41,7 @@ usage() {
   echo "    -d,--backup-directory     specify absolute path to backup directory for backup and restore"
   echo "    -a|--append               append new documents when seeding database (instead of dropping old data)"
   echo "    -i|--drop-indexes         drop any existing indexes when indexing database with index-db command"
+  echo "    -n|--ignore-diff          ignore differences in config files (.env and customization)"
   echo
   echo "Examples:"
   echo "    bash deploy.sh deploy -f docker-compose.yml"
@@ -83,6 +84,7 @@ DB_DROP="--drop"
 DROP_INDEXES=false
 LOCAL=false
 BACKUP_DIR=""
+IGNORE_DIFF=false
 
 COMMANDS=""
 while (( "$#" )); do
@@ -139,6 +141,10 @@ while (( "$#" )); do
       DROP_INDEXES=true
       shift 1
       ;;
+    -n|--ignore-diff)
+      IGNORE_DIFF=true
+      shift 1
+      ;;
     -d|--backup-directory)
       BACKUP_DIR=$2
       shift 2
@@ -168,9 +174,13 @@ export COMPOSE_PROJECT_NAME
 
 # Define various functions
 diff-env() {
-  output1="$(diff -u .env.example .env)" || true
+  if [ "$IGNORE_DIFF" = "true" ]; then
+    return 0
+  fi
+
+  output1="$(diff -u .env .env.example)" || true
   if [ -n "$output1" ]; then
-    echo "*** WARNING ***"
+    echo -e "\033[91m*** WARNING ***\033[00m"
     echo "Local .env file is different from .env.example"
     echo "This could be due to changes to the example or local changes."
     echo "Please review the diff to determine if any changes are necessary:"
@@ -179,9 +189,9 @@ diff-env() {
     echo
   fi
 
-  output2="$(diff -u customization.example customization)" || true
+  output2="$(diff -u customization customization.example)" || true
   if [ -n "$output2" ]; then
-    echo "*** WARNING ***"
+    echo -e "\033[91m*** WARNING ***\033[00m"
     echo "Local customization file is different from customization.example"
     echo "This could be due to changes to the example or local changes."
     echo "Please review the diff to determine if any changes are necessary:"
@@ -191,9 +201,9 @@ diff-env() {
   fi
 
   if [ -n "$output1" ] || [ -n "$output2" ]; then
-    echo "What would you like to do?"
-    echo "  (c)ontinue without changes"
-    echo "  (o)verwrite your local files with the examples"
+    echo "Local configuration files differ from examples (see above)! What would you like to do?"
+    echo "  (c)ontinue without changes  (use -n flag to skip prompt and continue in the future)"
+    echo "  (o)verwrite your local files with the examples  (the above diff(s) will be applied)"
     echo "  (s)top and make changes manually"
     read -rp '>>> ' response
     case "$response" in
