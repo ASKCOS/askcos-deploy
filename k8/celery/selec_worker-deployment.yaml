@@ -27,6 +27,6 @@ spec:
           args: ["-c", "celery -A askcos_site worker -c 1 -Q selec_worker --pool=gevent -n selec_worker@%h"]
           envFrom:
             - configMapRef:
-                name: django-config
+                name: django-env
       imagePullSecrets:
         - name: regcred
