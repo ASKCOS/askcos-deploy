@@ -55,7 +55,9 @@ spec:
             - containerPort: 8000
           envFrom:
             - configMapRef:
-                name: django-config
+                name: django-env
+            - configMapRef:
+                name: django-customization
           resources:
             requests:
               memory: "5Gi"

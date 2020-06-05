@@ -333,6 +333,12 @@ count-mongo-docs() {
   echo "Forward template collection:  $(run-mongo-js "db.forward_templates.countDocuments({})" | tr -d '\r') / 17089 expected (default)"
 }
 
+create-config-maps() {
+  echo "Creating config maps..."
+  kubectl create configmap django-env --from-env-file=.env.example
+  kubectl create configmap django-customization --from-env-file=customization.example
+}
+
 start-web-services() {
   echo "Starting web services..."
   kubectl apply -f k8/django
@@ -365,13 +371,14 @@ else
   do
     case "$arg" in
       create-secret | start-db-services | start-web-services | set-db-defaults | seed-db | count-mongo-docs | \
-      start-tf-server | start-celery-workers | index-db )
+      start-tf-server | start-celery-workers | index-db | create-config-maps )
         # This is a defined function, so execute it
         $arg
         ;;
       deploy)
         # Normal first deployment, do everything
         create-secret
+        create-config-maps
         start-db-services
         start-web-services
         wait-for-mongo
