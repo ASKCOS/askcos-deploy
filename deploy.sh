@@ -167,6 +167,56 @@ export COMPOSE_FILE
 export COMPOSE_PROJECT_NAME
 
 # Define various functions
+diff-env() {
+  output1="$(diff -u .env.example .env)" || true
+  if [ -n "$output1" ]; then
+    echo "*** WARNING ***"
+    echo "Local .env file is different from .env.example"
+    echo "This could be due to changes to the example or local changes."
+    echo "Please review the diff to determine if any changes are necessary:"
+    echo
+    echo "$output1"
+    echo
+  fi
+
+  output2="$(diff -u customization.example customization)" || true
+  if [ -n "$output2" ]; then
+    echo "*** WARNING ***"
+    echo "Local customization file is different from customization.example"
+    echo "This could be due to changes to the example or local changes."
+    echo "Please review the diff to determine if any changes are necessary:"
+    echo
+    echo "$output2"
+    echo
+  fi
+
+  if [ -n "$output1" ] || [ -n "$output2" ]; then
+    echo "What would you like to do?"
+    echo "  (c)ontinue without changes"
+    echo "  (o)verwrite your local files with the examples"
+    echo "  (s)top and make changes manually"
+    read -rp '>>> ' response
+    case "$response" in
+      [Cc])
+        echo "Continuing without changes."
+        ;;
+      [Oo])
+        echo "Overwriting local files."
+        cp .env.example .env
+        cp customization.example customization
+        ;;
+      [Ss])
+        echo "Stopping."
+        exit 1
+        ;;
+      *)
+        echo "Unrecognized option. Stopping."
+        exit 1
+        ;;
+    esac
+  fi
+}
+
 clean-data() {
   echo "Cleaning up application data volumes..."
   docker-compose stop app mongo nginx
@@ -433,7 +483,7 @@ else
     case "$arg" in
       clean-data | start-db-services | seed-db | copy-http-conf | copy-https-conf | create-ssl | pull-images | \
       start-web-services | start-tf-server | start-celery-workers | migrate | set-db-defaults | count-mongo-docs | \
-      backup | restore | index-db )
+      backup | restore | index-db | diff-env )
         # This is a defined function, so execute it
         $arg
         ;;
@@ -441,6 +491,7 @@ else
         # Normal first deployment, do everything
         copy-https-conf
         pull-images
+        diff-env
         start-db-services
         start-web-services
         set-db-defaults
@@ -453,6 +504,7 @@ else
         # Deploy with http, only difference is ssl cert creation and nginx conf
         copy-http-conf
         pull-images
+        diff-env
         start-db-services
         start-web-services
         set-db-defaults
@@ -464,6 +516,7 @@ else
       update)
         # Update an existing configuration, database seeding is not performed
         pull-images
+        diff-env
         clean-data
         start-db-services
         start-web-services
