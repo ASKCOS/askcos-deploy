@@ -18,7 +18,7 @@ usage() {
   echo
   echo "Valid commands:"
   echo "    deploy:                   performs initial deployment steps using http"
-  echo "    update:                   update an existing deployment"
+  echo "    apply:                    apply all k8 configurations"
   echo "    seed-db:                  seed mongo database with data"
   echo "    clean:                    stop and remove a currently running deployment"
   echo
@@ -28,6 +28,9 @@ usage() {
   echo "    -x,--reactions            reactions data for reseeding mongo database"
   echo "    -r,--retro-templates      retrosynthetic template data for reseeding mongo database"
   echo "    -t,--forward-templates    forward template data for reseeding mongo database"
+  echo "    -i|--drop-indexes         drop any existing indexes when indexing database with index-db command"
+  echo "    -u|--username             deploy token username for docker registry"
+  echo "    -p|--password             deploy token password for docker registry"
   echo
   echo "Examples:"
   echo "    bash deploy_k8.sh deploy"
@@ -44,6 +47,7 @@ CHEMICALS=""
 REACTIONS=""
 RETRO_TEMPLATES=""
 FORWARD_TEMPLATES=""
+DROP_INDEXES=false
 
 COMMANDS=""
 while (( "$#" )); do
@@ -75,6 +79,10 @@ while (( "$#" )); do
     -t|--forward-templates)
       FORWARD_TEMPLATES=$2
       shift 2
+      ;;
+    -i|--drop-indexes)
+      DROP_INDEXES=true
+      shift 1
       ;;
     -u|--username)
       DEPLOY_TOKEN_USERNAME=$2
@@ -232,7 +240,6 @@ seed-db() {
       copy-file "" "$buyables_src" "" "$mongo" "$buyables_dest" ""
     fi
     seed-db-collection buyables "$buyables_dest" &> seed-buyables.log &
-    run-mongo-js 'db.buyables.createIndex({smiles: "text"})'
   fi
 
   if [ -n "$CHEMICALS" ]; then
@@ -248,7 +255,6 @@ seed-db() {
       copy-file "" "$chemicals_src" "" "$mongo" "$chemicals_dest" ""
     fi
     seed-db-collection chemicals "$chemicals_dest" &> seed-chemicals.log &
-    run-mongo-js 'db.chemicals.createIndex({smiles: "hashed"})'
   fi
 
   if [ -n "$REACTIONS" ]; then
@@ -279,7 +285,6 @@ seed-db() {
       copy-file "" "$retro_src" "" "$mongo" "$retro_dest" ""
     fi
     seed-db-collection retro_templates "$retro_dest"
-    run-mongo-js 'db.retro_templates.createIndex({index: 1})'
   fi
 
   if [ -n "$FORWARD_TEMPLATES" ]; then
@@ -297,7 +302,25 @@ seed-db() {
     seed-db-collection forward_templates "$forward_dest"
   fi
 
+  index-db
   echo "Seeding complete."
+  echo
+}
+
+index-db() {
+  if [ "$DROP_INDEXES" = "true" ]; then
+    echo "Dropping existing indexes in mongo database..."
+    run-mongo-js 'db.buyables.dropIndexes()'
+    run-mongo-js 'db.chemicals.dropIndexes()'
+    run-mongo-js 'db.reactions.dropIndexes()'
+    run-mongo-js 'db.retro_templates.dropIndexes()'
+  fi
+  echo "Adding indexes to mongo database..."
+  run-mongo-js 'db.buyables.createIndex({smiles: 1, source: 1})'
+  run-mongo-js 'db.chemicals.createIndex({smiles: 1, template_set: 1})'
+  run-mongo-js 'db.reactions.createIndex({reaction_id: 1, template_set: 1})'
+  run-mongo-js 'db.retro_templates.createIndex({index: 1, template_set: 1})'
+  echo "Indexing complete."
   echo
 }
 
@@ -342,7 +365,7 @@ else
   do
     case "$arg" in
       create-secret | start-db-services | start-web-services | set-db-defaults | seed-db | count-mongo-docs | \
-      start-tf-server | start-celery-workers)
+      start-tf-server | start-celery-workers | index-db )
         # This is a defined function, so execute it
         $arg
         ;;

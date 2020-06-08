@@ -283,11 +283,13 @@ index-db() {
     echo "Dropping existing indexes in mongo database..."
     run-mongo-js 'db.buyables.dropIndexes()'
     run-mongo-js 'db.chemicals.dropIndexes()'
+    run-mongo-js 'db.reactions.dropIndexes()'
     run-mongo-js 'db.retro_templates.dropIndexes()'
   fi
   echo "Adding indexes to mongo database..."
   run-mongo-js 'db.buyables.createIndex({smiles: 1, source: 1})'
-  run-mongo-js 'db.chemicals.createIndex({smiles: 1})'
+  run-mongo-js 'db.chemicals.createIndex({smiles: 1, template_set: 1})'
+  run-mongo-js 'db.reactions.createIndex({reaction_id: 1, template_set: 1})'
   run-mongo-js 'db.retro_templates.createIndex({index: 1, template_set: 1})'
   echo "Indexing complete."
   echo
