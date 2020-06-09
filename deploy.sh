@@ -41,6 +41,7 @@ usage() {
   echo "    -d,--backup-directory     specify absolute path to backup directory for backup and restore"
   echo "    -a|--append               append new documents when seeding database (instead of dropping old data)"
   echo "    -i|--drop-indexes         drop any existing indexes when indexing database with index-db command"
+  echo "    -n|--ignore-diff          ignore differences in config files (.env and customization)"
   echo
   echo "Examples:"
   echo "    bash deploy.sh deploy -f docker-compose.yml"
@@ -83,6 +84,7 @@ DB_DROP="--drop"
 DROP_INDEXES=false
 LOCAL=false
 BACKUP_DIR=""
+IGNORE_DIFF=false
 
 COMMANDS=""
 while (( "$#" )); do
@@ -139,6 +141,10 @@ while (( "$#" )); do
       DROP_INDEXES=true
       shift 1
       ;;
+    -n|--ignore-diff)
+      IGNORE_DIFF=true
+      shift 1
+      ;;
     -d|--backup-directory)
       BACKUP_DIR=$2
       shift 2
@@ -167,6 +173,60 @@ export COMPOSE_FILE
 export COMPOSE_PROJECT_NAME
 
 # Define various functions
+diff-env() {
+  if [ "$IGNORE_DIFF" = "true" ]; then
+    return 0
+  fi
+
+  output1="$(diff -u .env .env.example)" || true
+  if [ -n "$output1" ]; then
+    echo -e "\033[91m*** WARNING ***\033[00m"
+    echo "Local .env file is different from .env.example"
+    echo "This could be due to changes to the example or local changes."
+    echo "Please review the diff to determine if any changes are necessary:"
+    echo
+    echo "$output1"
+    echo
+  fi
+
+  output2="$(diff -u customization customization.example)" || true
+  if [ -n "$output2" ]; then
+    echo -e "\033[91m*** WARNING ***\033[00m"
+    echo "Local customization file is different from customization.example"
+    echo "This could be due to changes to the example or local changes."
+    echo "Please review the diff to determine if any changes are necessary:"
+    echo
+    echo "$output2"
+    echo
+  fi
+
+  if [ -n "$output1" ] || [ -n "$output2" ]; then
+    echo "Local configuration files differ from examples (see above)! What would you like to do?"
+    echo "  (c)ontinue without changes  (use -n flag to skip prompt and continue in the future)"
+    echo "  (o)verwrite your local files with the examples  (the above diff(s) will be applied)"
+    echo "  (s)top and make changes manually"
+    read -rp '>>> ' response
+    case "$response" in
+      [Cc])
+        echo "Continuing without changes."
+        ;;
+      [Oo])
+        echo "Overwriting local files."
+        cp .env.example .env
+        cp customization.example customization
+        ;;
+      [Ss])
+        echo "Stopping."
+        exit 1
+        ;;
+      *)
+        echo "Unrecognized option. Stopping."
+        exit 1
+        ;;
+    esac
+  fi
+}
+
 clean-data() {
   echo "Cleaning up application data volumes..."
   docker-compose stop app mongo nginx
@@ -433,7 +493,7 @@ else
     case "$arg" in
       clean-data | start-db-services | seed-db | copy-http-conf | copy-https-conf | create-ssl | pull-images | \
       start-web-services | start-tf-server | start-celery-workers | migrate | set-db-defaults | count-mongo-docs | \
-      backup | restore | index-db )
+      backup | restore | index-db | diff-env )
         # This is a defined function, so execute it
         $arg
         ;;
@@ -441,6 +501,7 @@ else
         # Normal first deployment, do everything
         copy-https-conf
         pull-images
+        diff-env
         start-db-services
         start-web-services
         set-db-defaults
@@ -453,6 +514,7 @@ else
         # Deploy with http, only difference is ssl cert creation and nginx conf
         copy-http-conf
         pull-images
+        diff-env
         start-db-services
         start-web-services
         set-db-defaults
@@ -464,6 +526,7 @@ else
       update)
         # Update an existing configuration, database seeding is not performed
         pull-images
+        diff-env
         clean-data
         start-db-services
         start-web-services

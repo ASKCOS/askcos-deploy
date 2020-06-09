@@ -26,7 +26,7 @@ spec:
           args: ["-c", "celery -A askcos_site worker -c 12 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent"]
           envFrom:
             - configMapRef:
-                name: django-config
+                name: django-env
           resources:
             requests:
               memory: "1.0G"
