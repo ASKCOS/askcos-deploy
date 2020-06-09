@@ -7,6 +7,7 @@ ORGANIZATION=
 
 # Contact email, used in support pop-up dialog
 CONTACT_EMAIL=mlpds_support@mit.edu
+SUPPORT_EMAILS=incoming+mlpds-mit-askcos-askcos-12564933-issue-@incoming.gitlab.com, mlpds_support@mit.edu
 
 # Allows use of SMILES resolver in interactive path planner, which sends data to NIH NCI
 ENABLE_SMILES_RESOLVER=
