@@ -31,6 +31,7 @@ usage() {
   echo "    -i|--drop-indexes         drop any existing indexes when indexing database with index-db command"
   echo "    -u|--username             deploy token username for docker registry"
   echo "    -p|--password             deploy token password for docker registry"
+  echo "    -n|--ignore-diff          ignore differences in config files (.env and customization)"
   echo
   echo "Examples:"
   echo "    bash deploy_k8.sh deploy"
@@ -40,6 +41,14 @@ usage() {
   echo
 }
 
+# Create environment variable files from examples if they don't exist
+if [ ! -f ".env" ]; then
+  cp .env.example .env
+fi
+if [ ! -f "customization" ]; then
+  cp customization.example customization
+fi
+
 # Default argument values
 VERSION=""
 BUYABLES=""
@@ -48,6 +57,7 @@ REACTIONS=""
 RETRO_TEMPLATES=""
 FORWARD_TEMPLATES=""
 DROP_INDEXES=false
+IGNORE_DIFF=false
 
 COMMANDS=""
 while (( "$#" )); do
@@ -92,6 +102,10 @@ while (( "$#" )); do
       DEPLOY_TOKEN_PASSWORD=$2
       shift 2
       ;;
+    -n|--ignore-diff)
+      IGNORE_DIFF=true
+      shift 1
+      ;;
     --) # end argument parsing
       shift
       break
@@ -111,6 +125,60 @@ done
 eval set -- "$COMMANDS"
 
 # Define various functions
+diff-env() {
+  if [ "$IGNORE_DIFF" = "true" ]; then
+    return 0
+  fi
+
+  output1="$(diff -u .env .env.example)" || true
+  if [ -n "$output1" ]; then
+    echo -e "\033[91m*** WARNING ***\033[00m"
+    echo "Local .env file is different from .env.example"
+    echo "This could be due to changes to the example or local changes."
+    echo "Please review the diff to determine if any changes are necessary:"
+    echo
+    echo "$output1"
+    echo
+  fi
+
+  output2="$(diff -u customization customization.example)" || true
+  if [ -n "$output2" ]; then
+    echo -e "\033[91m*** WARNING ***\033[00m"
+    echo "Local customization file is different from customization.example"
+    echo "This could be due to changes to the example or local changes."
+    echo "Please review the diff to determine if any changes are necessary:"
+    echo
+    echo "$output2"
+    echo
+  fi
+
+  if [ -n "$output1" ] || [ -n "$output2" ]; then
+    echo "Local configuration files differ from examples (see above)! What would you like to do?"
+    echo "  (c)ontinue without changes  (use -n flag to skip prompt and continue in the future)"
+    echo "  (o)verwrite your local files with the examples  (the above diff(s) will be applied)"
+    echo "  (s)top and make changes manually"
+    read -rp '>>> ' response
+    case "$response" in
+      [Cc])
+        echo "Continuing without changes."
+        ;;
+      [Oo])
+        echo "Overwriting local files."
+        cp .env.example .env
+        cp customization.example customization
+        ;;
+      [Ss])
+        echo "Stopping."
+        exit 1
+        ;;
+      *)
+        echo "Unrecognized option. Stopping."
+        exit 1
+        ;;
+    esac
+  fi
+}
+
 create-secret() {
   set +e
   if ! kubectl get secret/regcred &> /dev/null; then
@@ -335,8 +403,8 @@ count-mongo-docs() {
 
 create-config-maps() {
   echo "Creating config maps..."
-  kubectl create configmap django-env --from-env-file=.env.example
-  kubectl create configmap django-customization --from-env-file=customization.example
+  kubectl create configmap django-env --from-env-file=.env
+  kubectl create configmap django-customization --from-env-file=customization
 }
 
 start-web-services() {
@@ -371,12 +439,13 @@ else
   do
     case "$arg" in
       create-secret | start-db-services | start-web-services | set-db-defaults | seed-db | count-mongo-docs | \
-      start-tf-server | start-celery-workers | index-db | create-config-maps )
+      start-tf-server | start-celery-workers | index-db | create-config-maps | diff-env )
         # This is a defined function, so execute it
         $arg
         ;;
       deploy)
         # Normal first deployment, do everything
+        diff-env
         create-secret
         create-config-maps
         start-db-services
@@ -391,6 +460,11 @@ else
       update)
         # Update an existing configuration, database seeding is not performed
         echo "Not implemented."
+        ;;
+      config)
+        # Update config maps for django app
+        diff-env
+        create-config-maps
         ;;
       apply)
         # (Re)apply all configurations, no database seeding
