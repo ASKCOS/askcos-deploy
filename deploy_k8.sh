@@ -403,8 +403,8 @@ count-mongo-docs() {
 
 create-config-maps() {
   echo "Creating config maps..."
-  kubectl create configmap django-env --from-env-file=.env
-  kubectl create configmap django-customization --from-env-file=customization
+  kubectl create configmap django-env --from-env-file=.env --dry-run=client -o yaml | kubectl apply -f -
+  kubectl create configmap django-customization --from-env-file=customization --dry-run=client -o yaml | kubectl apply -f -
 }
 
 start-web-services() {
