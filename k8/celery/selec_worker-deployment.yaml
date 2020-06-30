@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: selec-worker
-          image: registry.gitlab.com/mlpds_mit/askcos/askcos:2020.04
+          image: registry.gitlab.com/mlpds_mit/askcos/askcos-site:2020.04
           imagePullPolicy: Always
           command: ["/bin/bash"]
           args: ["-c", "celery -A askcos_site worker -c 1 -Q selec_worker --pool=gevent -n selec_worker@%h"]
