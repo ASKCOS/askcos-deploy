@@ -298,7 +298,7 @@ seed-db() {
   if [ -n "$BUYABLES" ]; then
     if [ "$BUYABLES" = "default" ]; then
       echo "Loading default buyables data in background..."
-      buyables_src="/usr/local/ASKCOS/makeit/data/buyables/buyables.json.gz"
+      buyables_src="/usr/local/askcos-core/askcos/data/buyables/buyables.json.gz"
       buyables_dest="/data/buyables.json.gz"
       copy-file "$django" "$buyables_src" django "$mongo" "$buyables_dest" ""
     elif [ -n "$BUYABLES" ]; then
@@ -313,7 +313,7 @@ seed-db() {
   if [ -n "$CHEMICALS" ]; then
     if [ "$CHEMICALS" = "default" ]; then
       echo "Loading default chemicals data in background..."
-      chemicals_src="/usr/local/ASKCOS/makeit/data/historian/chemicals.json.gz"
+      chemicals_src="/usr/local/askcos-core/askcos/data/historian/chemicals.json.gz"
       chemicals_dest="/data/chemicals.json.gz"
       copy-file "$django" "$chemicals_src" django "$mongo" "$chemicals_dest" ""
     elif [ -n "$CHEMICALS" ]; then
@@ -328,7 +328,7 @@ seed-db() {
   if [ -n "$REACTIONS" ]; then
     if [ "$REACTIONS" = "default" ]; then
       echo "Loading default reactions data in background..."
-      reactions_src="/usr/local/ASKCOS/makeit/data/historian/reactions.json.gz"
+      reactions_src="/usr/local/askcos-core/askcos/data/historian/reactions.json.gz"
       reactions_dest="/data/reactions.json.gz"
       copy-file "$django" "$reactions_src" django "$mongo" "$reactions_dest" ""
     elif [ -n "$REACTIONS" ]; then
@@ -343,13 +343,13 @@ seed-db() {
   if [ -n "$RETRO_TEMPLATES" ]; then
     if [ "$RETRO_TEMPLATES" = "default" ]; then
       echo "Loading default retrosynthetic templates..."
-      retro_src="/usr/local/ASKCOS/makeit/data/templates/retro.templates.json.gz"
+      retro_src="/usr/local/askcos-core/askcos/data/templates/retro.templates.json.gz"
       retro_dest="/data/retro.templates.json.gz"
       copy-file "$django" "$retro_src" django "$mongo" "$retro_dest" ""
     elif [ -n "$RETRO_TEMPLATES" ]; then
       echo "Loading retrosynthetic templates from $RETRO_TEMPLATES ..."
       retro_src=$RETRO_TEMPLATES
-      retro_dest="/data/templates/$(basename "$RETRO_TEMPLATES")"
+      retro_dest="/data/$(basename "$RETRO_TEMPLATES")"
       copy-file "" "$retro_src" "" "$mongo" "$retro_dest" ""
     fi
     seed-db-collection retro_templates "$retro_dest"
@@ -358,7 +358,7 @@ seed-db() {
   if [ -n "$FORWARD_TEMPLATES" ]; then
     if [ "$FORWARD_TEMPLATES" = "default" ]; then
       echo "Loading default retrosynthetic templates..."
-      forward_src="/usr/local/ASKCOS/makeit/data/templates/forward.templates.json.gz"
+      forward_src="/usr/local/askcos-core/askcos/data/templates/forward.templates.json.gz"
       forward_dest="/data/forward.templates.json.gz"
       copy-file "$django" "$forward_src" django "$mongo" "$forward_dest" ""
     elif [ -n "$FORWARD_TEMPLATES" ]; then

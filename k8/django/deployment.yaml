@@ -29,11 +29,11 @@ spec:
         - name: migrate
           image: registry.gitlab.com/mlpds_mit/askcos/askcos-site:2020.04
           command: ["/bin/bash"]
-          args: ["-c", "python /usr/local/ASKCOS/askcos/manage.py makemigrations main && python /usr/local/ASKCOS/askcos/manage.py migrate"]
+          args: ["-c", "python /usr/local/askcos-site/manage.py makemigrations main && python /usr/local/askcos-site/manage.py migrate"]
         - name: collectstatic
           image: registry.gitlab.com/mlpds_mit/askcos/askcos-site:2020.04
           command: ["/bin/bash"]
-          args: ["-c", "mv /usr/local/ASKCOS/askcos/static/* /static/"]
+          args: ["-c", "mv /usr/local/askcos-site/static/* /static/"]
           volumeMounts:
             - name: staticfiles
               mountPath: /static
@@ -50,7 +50,7 @@ spec:
         - name: django
           image: registry.gitlab.com/mlpds_mit/askcos/askcos-site:2020.04
           command: ["/bin/bash"]
-          args: ["-c", "uwsgi --http :8000 --master --processes=4 --wsgi-file /usr/local/ASKCOS/askcos/wsgi.py"]
+          args: ["-c", "uwsgi --http :8000 --master --processes=4 --wsgi-file /usr/local/askcos-site/wsgi.py"]
           ports:
             - containerPort: 8000
           envFrom:
