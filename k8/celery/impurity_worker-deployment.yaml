@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: impurity-worker
-          image: registry.gitlab.com/mlpds_mit/askcos/askcos:2020.04
+          image: registry.gitlab.com/mlpds_mit/askcos/askcos-site:2020.04
           imagePullPolicy: Always
           command: ["/bin/bash"]
           args: ["-c", "celery -A askcos_site worker -c 1 -Q impurity_worker --pool=gevent -n impurity_worker@%h"]

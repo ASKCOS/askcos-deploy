@@ -385,13 +385,13 @@ create-ssl() {
 
 pull-images() {
   if [ "$LOCAL" = "false" ]; then
-    docker pull ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+    docker pull ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
   fi
 }
 
 get-image-date() {
   # Retrieve image build date for website footer
-  UPDATE_DATE=$(docker inspect -f '{{ .Created }}' ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER})
+  UPDATE_DATE=$(docker inspect -f '{{ .Created }}' ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER})
   UPDATE_DATE=${UPDATE_DATE%T*}  # cut off time, only keeping date
   export UPDATE_DATE
 }
@@ -436,8 +436,8 @@ start-celery-workers() {
 
 migrate() {
   echo "Migrating user database..."
-  docker-compose exec -T app bash -c "python /usr/local/ASKCOS/askcos/manage.py makemigrations main"
-  docker-compose exec -T app bash -c "python /usr/local/ASKCOS/askcos/manage.py migrate"
+  docker-compose exec -T app bash -c "python /usr/local/askcos-site/manage.py makemigrations main"
+  docker-compose exec -T app bash -c "python /usr/local/askcos-site/manage.py migrate"
   echo "Migration complete."
   echo
 }
