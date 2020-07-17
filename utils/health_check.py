@@ -36,6 +36,8 @@ import time
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+import tqdm
+
 
 celery_workers = [
     {
@@ -152,7 +154,7 @@ def main():
     client = APIClient(host=host)
 
     results = {}
-    for worker in celery_workers:
+    for worker in tqdm.tqdm(celery_workers):
         if workers and worker['name'] not in workers:
             continue
         status = health_check(client, worker['endpoint'], worker['test'])
