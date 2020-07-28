@@ -18,7 +18,7 @@ usage() {
   echo
   echo "Valid commands:"
   echo "    deploy:                   performs initial deployment steps using http"
-  echo "    update:                   update an existing deployment"
+  echo "    apply:                    apply all k8 configurations"
   echo "    seed-db:                  seed mongo database with data"
   echo "    clean:                    stop and remove a currently running deployment"
   echo
@@ -28,6 +28,10 @@ usage() {
   echo "    -x,--reactions            reactions data for reseeding mongo database"
   echo "    -r,--retro-templates      retrosynthetic template data for reseeding mongo database"
   echo "    -t,--forward-templates    forward template data for reseeding mongo database"
+  echo "    -i|--drop-indexes         drop any existing indexes when indexing database with index-db command"
+  echo "    -u|--username             deploy token username for docker registry"
+  echo "    -p|--password             deploy token password for docker registry"
+  echo "    -n|--ignore-diff          ignore differences in config files (.env and customization)"
   echo
   echo "Examples:"
   echo "    bash deploy_k8.sh deploy"
@@ -37,6 +41,14 @@ usage() {
   echo
 }
 
+# Create environment variable files from examples if they don't exist
+if [ ! -f ".env" ]; then
+  cp .env.example .env
+fi
+if [ ! -f "customization" ]; then
+  cp customization.example customization
+fi
+
 # Default argument values
 VERSION=""
 BUYABLES=""
@@ -44,6 +56,8 @@ CHEMICALS=""
 REACTIONS=""
 RETRO_TEMPLATES=""
 FORWARD_TEMPLATES=""
+DROP_INDEXES=false
+IGNORE_DIFF=false
 
 COMMANDS=""
 while (( "$#" )); do
@@ -76,6 +90,10 @@ while (( "$#" )); do
       FORWARD_TEMPLATES=$2
       shift 2
       ;;
+    -i|--drop-indexes)
+      DROP_INDEXES=true
+      shift 1
+      ;;
     -u|--username)
       DEPLOY_TOKEN_USERNAME=$2
       shift 2
@@ -83,6 +101,10 @@ while (( "$#" )); do
     -p|--password)
       DEPLOY_TOKEN_PASSWORD=$2
       shift 2
+      ;;
+    -n|--ignore-diff)
+      IGNORE_DIFF=true
+      shift 1
       ;;
     --) # end argument parsing
       shift
@@ -103,6 +125,60 @@ done
 eval set -- "$COMMANDS"
 
 # Define various functions
+diff-env() {
+  if [ "$IGNORE_DIFF" = "true" ]; then
+    return 0
+  fi
+
+  output1="$(diff -u .env .env.example)" || true
+  if [ -n "$output1" ]; then
+    echo -e "\033[91m*** WARNING ***\033[00m"
+    echo "Local .env file is different from .env.example"
+    echo "This could be due to changes to the example or local changes."
+    echo "Please review the diff to determine if any changes are necessary:"
+    echo
+    echo "$output1"
+    echo
+  fi
+
+  output2="$(diff -u customization customization.example)" || true
+  if [ -n "$output2" ]; then
+    echo -e "\033[91m*** WARNING ***\033[00m"
+    echo "Local customization file is different from customization.example"
+    echo "This could be due to changes to the example or local changes."
+    echo "Please review the diff to determine if any changes are necessary:"
+    echo
+    echo "$output2"
+    echo
+  fi
+
+  if [ -n "$output1" ] || [ -n "$output2" ]; then
+    echo "Local configuration files differ from examples (see above)! What would you like to do?"
+    echo "  (c)ontinue without changes  (use -n flag to skip prompt and continue in the future)"
+    echo "  (o)verwrite your local files with the examples  (the above diff(s) will be applied)"
+    echo "  (s)top and make changes manually"
+    read -rp '>>> ' response
+    case "$response" in
+      [Cc])
+        echo "Continuing without changes."
+        ;;
+      [Oo])
+        echo "Overwriting local files."
+        cp .env.example .env
+        cp customization.example customization
+        ;;
+      [Ss])
+        echo "Stopping."
+        exit 1
+        ;;
+      *)
+        echo "Unrecognized option. Stopping."
+        exit 1
+        ;;
+    esac
+  fi
+}
+
 create-secret() {
   set +e
   if ! kubectl get secret/regcred &> /dev/null; then
@@ -222,7 +298,7 @@ seed-db() {
   if [ -n "$BUYABLES" ]; then
     if [ "$BUYABLES" = "default" ]; then
       echo "Loading default buyables data in background..."
-      buyables_src="/usr/local/ASKCOS/makeit/data/buyables/buyables.json.gz"
+      buyables_src="/usr/local/askcos-core/askcos/data/buyables/buyables.json.gz"
       buyables_dest="/data/buyables.json.gz"
       copy-file "$django" "$buyables_src" django "$mongo" "$buyables_dest" ""
     elif [ -n "$BUYABLES" ]; then
@@ -232,13 +308,12 @@ seed-db() {
       copy-file "" "$buyables_src" "" "$mongo" "$buyables_dest" ""
     fi
     seed-db-collection buyables "$buyables_dest" &> seed-buyables.log &
-    run-mongo-js 'db.buyables.createIndex({smiles: "text"})'
   fi
 
   if [ -n "$CHEMICALS" ]; then
     if [ "$CHEMICALS" = "default" ]; then
       echo "Loading default chemicals data in background..."
-      chemicals_src="/usr/local/ASKCOS/makeit/data/historian/chemicals.json.gz"
+      chemicals_src="/usr/local/askcos-core/askcos/data/historian/chemicals.json.gz"
       chemicals_dest="/data/chemicals.json.gz"
       copy-file "$django" "$chemicals_src" django "$mongo" "$chemicals_dest" ""
     elif [ -n "$CHEMICALS" ]; then
@@ -248,13 +323,12 @@ seed-db() {
       copy-file "" "$chemicals_src" "" "$mongo" "$chemicals_dest" ""
     fi
     seed-db-collection chemicals "$chemicals_dest" &> seed-chemicals.log &
-    run-mongo-js 'db.chemicals.createIndex({smiles: "hashed"})'
   fi
 
   if [ -n "$REACTIONS" ]; then
     if [ "$REACTIONS" = "default" ]; then
       echo "Loading default reactions data in background..."
-      reactions_src="/usr/local/ASKCOS/makeit/data/historian/reactions.json.gz"
+      reactions_src="/usr/local/askcos-core/askcos/data/historian/reactions.json.gz"
       reactions_dest="/data/reactions.json.gz"
       copy-file "$django" "$reactions_src" django "$mongo" "$reactions_dest" ""
     elif [ -n "$REACTIONS" ]; then
@@ -269,23 +343,22 @@ seed-db() {
   if [ -n "$RETRO_TEMPLATES" ]; then
     if [ "$RETRO_TEMPLATES" = "default" ]; then
       echo "Loading default retrosynthetic templates..."
-      retro_src="/usr/local/ASKCOS/makeit/data/templates/retro.templates.json.gz"
+      retro_src="/usr/local/askcos-core/askcos/data/templates/retro.templates.json.gz"
       retro_dest="/data/retro.templates.json.gz"
       copy-file "$django" "$retro_src" django "$mongo" "$retro_dest" ""
     elif [ -n "$RETRO_TEMPLATES" ]; then
       echo "Loading retrosynthetic templates from $RETRO_TEMPLATES ..."
       retro_src=$RETRO_TEMPLATES
-      retro_dest="/data/templates/$(basename "$RETRO_TEMPLATES")"
+      retro_dest="/data/$(basename "$RETRO_TEMPLATES")"
       copy-file "" "$retro_src" "" "$mongo" "$retro_dest" ""
     fi
     seed-db-collection retro_templates "$retro_dest"
-    run-mongo-js 'db.retro_templates.createIndex({index: 1})'
   fi
 
   if [ -n "$FORWARD_TEMPLATES" ]; then
     if [ "$FORWARD_TEMPLATES" = "default" ]; then
       echo "Loading default retrosynthetic templates..."
-      forward_src="/usr/local/ASKCOS/makeit/data/templates/forward.templates.json.gz"
+      forward_src="/usr/local/askcos-core/askcos/data/templates/forward.templates.json.gz"
       forward_dest="/data/forward.templates.json.gz"
       copy-file "$django" "$forward_src" django "$mongo" "$forward_dest" ""
     elif [ -n "$FORWARD_TEMPLATES" ]; then
@@ -297,7 +370,25 @@ seed-db() {
     seed-db-collection forward_templates "$forward_dest"
   fi
 
+  index-db
   echo "Seeding complete."
+  echo
+}
+
+index-db() {
+  if [ "$DROP_INDEXES" = "true" ]; then
+    echo "Dropping existing indexes in mongo database..."
+    run-mongo-js 'db.buyables.dropIndexes()'
+    run-mongo-js 'db.chemicals.dropIndexes()'
+    run-mongo-js 'db.reactions.dropIndexes()'
+    run-mongo-js 'db.retro_templates.dropIndexes()'
+  fi
+  echo "Adding indexes to mongo database..."
+  run-mongo-js 'db.buyables.createIndex({smiles: 1, source: 1})'
+  run-mongo-js 'db.chemicals.createIndex({smiles: 1, template_set: 1})'
+  run-mongo-js 'db.reactions.createIndex({reaction_id: 1, template_set: 1})'
+  run-mongo-js 'db.retro_templates.createIndex({index: 1, template_set: 1})'
+  echo "Indexing complete."
   echo
 }
 
@@ -308,6 +399,12 @@ count-mongo-docs() {
   echo "Reactions collection:         $(run-mongo-js "db.reactions.countDocuments({})" | tr -d '\r') / 0 expected (default)"
   echo "Retro template collection:    $(run-mongo-js "db.retro_templates.countDocuments({})" | tr -d '\r') / 163723 expected (default)"
   echo "Forward template collection:  $(run-mongo-js "db.forward_templates.countDocuments({})" | tr -d '\r') / 17089 expected (default)"
+}
+
+create-config-maps() {
+  echo "Creating config maps..."
+  kubectl create configmap django-env --from-env-file=.env --dry-run=client -o yaml | kubectl apply -f -
+  kubectl create configmap django-customization --from-env-file=customization --dry-run=client -o yaml | kubectl apply -f -
 }
 
 start-web-services() {
@@ -342,13 +439,15 @@ else
   do
     case "$arg" in
       create-secret | start-db-services | start-web-services | set-db-defaults | seed-db | count-mongo-docs | \
-      start-tf-server | start-celery-workers)
+      start-tf-server | start-celery-workers | index-db | create-config-maps | diff-env )
         # This is a defined function, so execute it
         $arg
         ;;
       deploy)
         # Normal first deployment, do everything
+        diff-env
         create-secret
+        create-config-maps
         start-db-services
         start-web-services
         wait-for-mongo
@@ -361,6 +460,11 @@ else
       update)
         # Update an existing configuration, database seeding is not performed
         echo "Not implemented."
+        ;;
+      config)
+        # Update config maps for django app
+        diff-env
+        create-config-maps
         ;;
       apply)
         # (Re)apply all configurations, no database seeding

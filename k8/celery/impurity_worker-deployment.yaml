@@ -21,12 +21,12 @@ spec:
     spec:
       containers:
         - name: impurity-worker
-          image: registry.gitlab.com/mlpds_mit/askcos/askcos:0.4.1
+          image: registry.gitlab.com/mlpds_mit/askcos/askcos-site:2020.07
           imagePullPolicy: Always
           command: ["/bin/bash"]
           args: ["-c", "celery -A askcos_site worker -c 1 -Q impurity_worker --pool=gevent -n impurity_worker@%h"]
           envFrom:
             - configMapRef:
-                name: django-config
+                name: django-env
       imagePullSecrets:
         - name: regcred

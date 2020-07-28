@@ -36,7 +36,7 @@ services:
       - 'appdata:/data/app'
 
   app:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
     hostname: app
     restart: always
     env_file:
@@ -45,64 +45,64 @@ services:
     environment:
       - VERSION_NUMBER  # this overrides value in .env if a different value was specified to deploy.sh
       - UPDATE_DATE
-    command: bash -c "uwsgi --socket :8000 --master --processes=4 --wsgi-file /usr/local/ASKCOS/askcos/wsgi.py -b 32768"
+    command: bash -c "uwsgi --socket :8000 --master --processes=4 --wsgi-file /usr/local/askcos-site/wsgi.py -b 32768"
     expose:
       - '8000'
     volumes:
-      - 'staticdata:/usr/local/ASKCOS/askcos/static'
-      - 'appdata:/usr/local/ASKCOS/makeit/data'
+      - 'staticdata:/usr/local/askcos-site/static'
+      - 'appdata:/usr/local/askcos-core/askcos/data'
 
   cr_network_worker:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
     restart: always
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 2 -Q cr_network_worker -n cr_network_worker@%h --pool=gevent"
 
   tb_coordinator_mcts:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
     restart: always
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 1 -Q tb_coordinator_mcts -n tb_coordinator_mcts@%h --pool=gevent --without-heartbeat"
 
   tb_c_worker:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
     restart: always
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 12 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent"
 
   sites_worker:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos:0.4.0
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
     restart: always
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 1 -Q sites_worker --pool=gevent -n sites_worker@%h"
 
   selec_worker:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
     restart: always
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 1 -Q selec_worker --pool=gevent -n selec_worker@%h"
 
   impurity_worker:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
     restart: always
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 1 -Q impurity_worker --pool=gevent -n impurity_worker@%h"
 
   atom_mapping_worker:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
     restart: always
     env_file:
       - .env
     command: bash -c "celery -A askcos_site worker -c 3 -Q atom_mapping_worker --pool=gevent -n atom_mapping_worker@%h"
 
   tffp_worker:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
     restart: always
     env_file:
       - .env

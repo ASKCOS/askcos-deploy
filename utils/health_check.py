@@ -36,6 +36,8 @@ import time
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+import tqdm
+
 
 celery_workers = [
     {
@@ -142,13 +144,17 @@ def main():
     host = args.host[0] if args.host is not None else 'localhost'
     restart = args.no_restart
     version = args.version
-    directory = args.project_directory
+    wd = args.project_directory[0] if args.project_directory else None
     scales = dict(args.scales)
+
+    env = os.environ.copy()
+    if version is not None:
+        env['VERSION_NUMBER'] = version[0]
 
     client = APIClient(host=host)
 
     results = {}
-    for worker in celery_workers:
+    for worker in tqdm.tqdm(celery_workers):
         if workers and worker['name'] not in workers:
             continue
         status = health_check(client, worker['endpoint'], worker['test'])
@@ -164,10 +170,33 @@ def main():
     for worker, status in results.items():
         print('Worker {0} {1}.'.format(worker, states[status]))
 
+    if results.get('tb_coordinator_mcts') == 2:
+        print('\nTree builder coordinator timed out. Checking queue...')
+        result = subprocess.run(
+            ['docker-compose', 'exec', 'rabbit', 'rabbitmqctl', 'list_queues', '--online', 'name', 'messages_ready'],
+            env=env, cwd=wd, capture_output=True,
+        )
+        output = result.stdout.decode('utf-8')
+        for line in output.splitlines():
+            parts = line.split()
+            if parts[0] == 'tb_coordinator_mcts':
+                print('There are {0} tasks waiting in the tree builder queue.\n'.format(parts[1]))
+                response = input('Do you want to clear the queue and restart the worker? (y/N) ')
+                if response.lower() in ['y', 'yes']:
+                    result = subprocess.run(
+                        ['docker-compose', 'exec', 'app', 'celery', '-A', 'askcos_site', '-Q', 'tb_coordinator_mcts', 'purge', '-f'],
+                        env=env, cwd=wd,
+                    )
+                    if result.returncode == 0:
+                        results['tb_coordinator_mcts'] = 1
+                    else:
+                        print('Unable to clear queue. Not restarting worker.')
+                break
+
     if restart:
         restart_list = [worker for worker, status in results.items() if status == 1]
         if restart_list:
-            print('Restarting workers...')
+            print('\nRestarting workers...')
             command = ['docker-compose', 'up', '--detach', '--force-recreate']
 
             for worker in restart_list:
@@ -176,14 +205,6 @@ def main():
                     command.extend(['--scale', '{0}={1}'.format(worker, scale)])
 
             command.extend(restart_list)
-
-            env = os.environ.copy()
-            if version is not None:
-                env['VERSION_NUMBER'] = version[0]
-
-            wd = None
-            if directory is not None:
-                wd = directory[0]
 
             result = subprocess.run(command, env=env, cwd=wd)
             if result.returncode == 0:

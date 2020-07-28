@@ -25,6 +25,8 @@ usage() {
   echo "    start:                    (re)start an existing deployment"
   echo "    stop:                     stop a currently running deployment"
   echo "    clean:                    stop and remove a currently running deployment"
+  echo "    backup:                   export database data from docker volumes to .tar.gz files"
+  echo "    restore:                  import database data from .tar.gz files to docker volumes"
   echo
   echo "Optional arguments:"
   echo "    -f,--compose-file         specify docker-compose file(s) for deployment"
@@ -36,12 +38,18 @@ usage() {
   echo "    -t,--forward-templates    forward template data for reseeding mongo database"
   echo "    -p,--project-name         specify project name to be used for services (prefix for docker container names)"
   echo "    -l,--local                use locally available docker images instead of pulling new image"
+  echo "    -d,--backup-directory     specify absolute path to backup directory for backup and restore"
+  echo "    -a|--append               append new documents when seeding database (instead of dropping old data)"
+  echo "    -i|--drop-indexes         drop any existing indexes when indexing database with index-db command"
+  echo "    -n|--ignore-diff          ignore differences in config files (.env and customization)"
   echo
   echo "Examples:"
   echo "    bash deploy.sh deploy -f docker-compose.yml"
   echo "    bash deploy.sh update -v x.y.z"
   echo "    bash deploy.sh seed-db -r retro-templates.json.gz -b buyables.json.gz"
   echo "    bash deploy.sh clean"
+  echo "    bash deploy.sh backup -p my_project_name"
+  echo "    bash deploy.sh restore -d /absolute/path/to/backups/ "
   echo
 }
 
@@ -73,7 +81,10 @@ REACTIONS=""
 RETRO_TEMPLATES=""
 FORWARD_TEMPLATES=""
 DB_DROP="--drop"
+DROP_INDEXES=false
 LOCAL=false
+BACKUP_DIR=""
+IGNORE_DIFF=false
 
 COMMANDS=""
 while (( "$#" )); do
@@ -126,6 +137,18 @@ while (( "$#" )); do
       DB_DROP=""
       shift 1
       ;;
+    -i|--drop-indexes)
+      DROP_INDEXES=true
+      shift 1
+      ;;
+    -n|--ignore-diff)
+      IGNORE_DIFF=true
+      shift 1
+      ;;
+    -d|--backup-directory)
+      BACKUP_DIR=$2
+      shift 2
+      ;;
     --) # end argument parsing
       shift
       break
@@ -150,6 +173,60 @@ export COMPOSE_FILE
 export COMPOSE_PROJECT_NAME
 
 # Define various functions
+diff-env() {
+  if [ "$IGNORE_DIFF" = "true" ]; then
+    return 0
+  fi
+
+  output1="$(diff -u .env .env.example)" || true
+  if [ -n "$output1" ]; then
+    echo -e "\033[91m*** WARNING ***\033[00m"
+    echo "Local .env file is different from .env.example"
+    echo "This could be due to changes to the example or local changes."
+    echo "Please review the diff to determine if any changes are necessary:"
+    echo
+    echo "$output1"
+    echo
+  fi
+
+  output2="$(diff -u customization customization.example)" || true
+  if [ -n "$output2" ]; then
+    echo -e "\033[91m*** WARNING ***\033[00m"
+    echo "Local customization file is different from customization.example"
+    echo "This could be due to changes to the example or local changes."
+    echo "Please review the diff to determine if any changes are necessary:"
+    echo
+    echo "$output2"
+    echo
+  fi
+
+  if [ -n "$output1" ] || [ -n "$output2" ]; then
+    echo "Local configuration files differ from examples (see above)! What would you like to do?"
+    echo "  (c)ontinue without changes  (use -n flag to skip prompt and continue in the future)"
+    echo "  (o)verwrite your local files with the examples  (the above diff(s) will be applied)"
+    echo "  (s)top and make changes manually"
+    read -rp '>>> ' response
+    case "$response" in
+      [Cc])
+        echo "Continuing without changes."
+        ;;
+      [Oo])
+        echo "Overwriting local files."
+        cp .env.example .env
+        cp customization.example customization
+        ;;
+      [Ss])
+        echo "Stopping."
+        exit 1
+        ;;
+      *)
+        echo "Unrecognized option. Stopping."
+        exit 1
+        ;;
+    esac
+  fi
+}
+
 clean-data() {
   echo "Cleaning up application data volumes..."
   docker-compose stop app mongo nginx
@@ -204,27 +281,23 @@ seed-db() {
     echo "Loading default buyables data in background..."
     buyables_file="/data/app/buyables/buyables.json.gz"
     seed-db-collection buyables "$buyables_file" -d
-    run-mongo-js 'db.buyables.createIndex({smiles: "text"})'
   elif [ -n "$BUYABLES" ]; then
     echo "Loading buyables data from $BUYABLES in background..."
     buyables_file="/data/app/buyables/$(basename $BUYABLES)"
     docker cp "$BUYABLES" deploy_mongo_1:"$buyables_file"
     run-mongo-js "db.buyables.remove({})"
     seed-db-collection buyables "$buyables_file" -d
-    run-mongo-js 'db.buyables.createIndex({smiles: "text"})'
   fi
 
   if [ "$CHEMICALS" = "default" ]; then
     echo "Loading default chemicals data in background..."
     chemicals_file="/data/app/historian/chemicals.json.gz"
     seed-db-collection chemicals "$chemicals_file" -d
-    run-mongo-js 'db.chemicals.createIndex({smiles: "hashed"})'
   elif [ -n "$CHEMICALS" ]; then
     echo "Loading chemicals data from $CHEMICALS in background..."
     chemicals_file="/data/app/historian/$(basename $CHEMICALS)"
     docker cp "$CHEMICALS" deploy_mongo_1:"$chemicals_file"
     seed-db-collection chemicals "$chemicals_file" -d
-    run-mongo-js 'db.chemicals.createIndex({smiles: "hashed"})'
   fi
 
   if [ "$REACTIONS" = "default" ]; then
@@ -242,13 +315,11 @@ seed-db() {
     echo "Loading default retrosynthetic templates..."
     retro_file="/data/app/templates/retro.templates.json.gz"
     seed-db-collection retro_templates "$retro_file"
-    run-mongo-js 'db.retro_templates.createIndex({index: 1})'
   elif [ -n "$RETRO_TEMPLATES" ]; then
     echo "Loading retrosynthetic templates from $RETRO_TEMPLATES ..."
     retro_file="/data/app/templates/$(basename $RETRO_TEMPLATES)"
     docker cp "$RETRO_TEMPLATES" deploy_mongo_1:"$retro_file"
     seed-db-collection retro_templates "$retro_file"
-    run-mongo-js 'db.retro_templates.createIndex({index: 1})'
   fi
 
   if [ "$FORWARD_TEMPLATES" = "default" ]; then
@@ -262,7 +333,25 @@ seed-db() {
     seed-db-collection forward_templates "$forward_file"
   fi
 
+  index-db
   echo "Seeding complete."
+  echo
+}
+
+index-db() {
+  if [ "$DROP_INDEXES" = "true" ]; then
+    echo "Dropping existing indexes in mongo database..."
+    run-mongo-js 'db.buyables.dropIndexes()'
+    run-mongo-js 'db.chemicals.dropIndexes()'
+    run-mongo-js 'db.reactions.dropIndexes()'
+    run-mongo-js 'db.retro_templates.dropIndexes()'
+  fi
+  echo "Adding indexes to mongo database..."
+  run-mongo-js 'db.buyables.createIndex({smiles: 1, source: 1})'
+  run-mongo-js 'db.chemicals.createIndex({smiles: 1, template_set: 1})'
+  run-mongo-js 'db.reactions.createIndex({reaction_id: 1, template_set: 1})'
+  run-mongo-js 'db.retro_templates.createIndex({index: 1, template_set: 1})'
+  echo "Indexing complete."
   echo
 }
 
@@ -283,6 +372,7 @@ copy-https-conf() {
   echo "Using https nginx configuration."
   cp nginx.https.conf nginx.conf
   echo
+  create-ssl
 }
 
 create-ssl() {
@@ -295,18 +385,24 @@ create-ssl() {
 
 pull-images() {
   if [ "$LOCAL" = "false" ]; then
-    docker pull ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER}
+    docker pull ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
   fi
 }
 
 get-image-date() {
   # Retrieve image build date for website footer
-  UPDATE_DATE=$(docker inspect -f '{{ .Created }}' ${ASKCOS_IMAGE_REGISTRY}askcos:${VERSION_NUMBER})
+  UPDATE_DATE=$(docker inspect -f '{{ .Created }}' ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER})
   UPDATE_DATE=${UPDATE_DATE%T*}  # cut off time, only keeping date
   export UPDATE_DATE
 }
 
 start-web-services() {
+  if [ ! -f "nginx.conf" ]; then
+    echo "Missing nginx configuration file (nginx.conf)!"
+    echo "Run 'bash deploy.sh copy-http-conf' or 'bash deploy.sh copy-https-conf' to create."
+    echo
+    exit 1
+  fi
   echo "Starting web services..."
   get-image-date
   docker-compose up -d --remove-orphans nginx app
@@ -340,10 +436,49 @@ start-celery-workers() {
 
 migrate() {
   echo "Migrating user database..."
-  docker-compose exec -T app bash -c "python /usr/local/ASKCOS/askcos/manage.py makemigrations main"
-  docker-compose exec -T app bash -c "python /usr/local/ASKCOS/askcos/manage.py migrate"
+  docker-compose exec -T app bash -c "python /usr/local/askcos-site/manage.py makemigrations main"
+  docker-compose exec -T app bash -c "python /usr/local/askcos-site/manage.py migrate"
   echo "Migration complete."
   echo
+}
+
+export_volume() {
+  volume=$1
+  directory=$2
+  filename=$3
+  volume_name=${COMPOSE_PROJECT_NAME}_${volume}
+  docker run --rm -v ${volume_name}:/src -v ${directory}:/dest alpine tar -czf /dest/${filename} /src
+}
+
+import_volume() {
+  volume=$1
+  directory=$2
+  filename=$3
+  volume_name=${COMPOSE_PROJECT_NAME}_${volume}
+  docker run --rm -v ${volume_name}:/dest -v ${directory}:/src alpine tar -xzf /src/${filename} -C /dest --strip 1
+}
+
+backup() {
+  if [ -z "$BACKUP_DIR" ]; then
+    BACKUP_DIR="$(pwd)/backup/$(date +%Y%m%d%s)"
+  fi
+  mkdir -p ${BACKUP_DIR}
+  echo "Backing up data to ${BACKUP_DIR}"
+  echo "This may take a few minutes..."
+  export_volume mongo_data ${BACKUP_DIR} mongo_data.tar.gz
+  export_volume mysql_data ${BACKUP_DIR} mysql_data.tar.gz
+  echo "Backup complete."
+}
+
+restore() {
+  if [ -z "$BACKUP_DIR" ]; then
+    BACKUP_DIR="$(pwd)/backup/$(ls -t backup | head -1)"
+  fi
+  echo "Restoring data from ${BACKUP_DIR}"
+  echo "This may take a few minutes..."
+  import_volume mongo_data ${BACKUP_DIR} mongo_data.tar.gz
+  import_volume mysql_data ${BACKUP_DIR} mysql_data.tar.gz
+  echo "Restore complete."
 }
 
 # Handle positional arguments, which should be commands
@@ -357,15 +492,16 @@ else
   do
     case "$arg" in
       clean-data | start-db-services | seed-db | copy-http-conf | copy-https-conf | create-ssl | pull-images | \
-      start-web-services | start-tf-server | start-celery-workers | migrate | set-db-defaults | count-mongo-docs)
+      start-web-services | start-tf-server | start-celery-workers | migrate | set-db-defaults | count-mongo-docs | \
+      backup | restore | index-db | diff-env )
         # This is a defined function, so execute it
         $arg
         ;;
       deploy)
         # Normal first deployment, do everything
         copy-https-conf
-        create-ssl
         pull-images
+        diff-env
         start-db-services
         start-web-services
         set-db-defaults
@@ -377,6 +513,8 @@ else
       deploy-http)
         # Deploy with http, only difference is ssl cert creation and nginx conf
         copy-http-conf
+        pull-images
+        diff-env
         start-db-services
         start-web-services
         set-db-defaults
@@ -388,6 +526,7 @@ else
       update)
         # Update an existing configuration, database seeding is not performed
         pull-images
+        diff-env
         clean-data
         start-db-services
         start-web-services
