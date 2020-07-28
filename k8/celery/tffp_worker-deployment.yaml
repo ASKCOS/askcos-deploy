@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: tffp-worker
-          image: registry.gitlab.com/mlpds_mit/askcos/askcos-site:2020.04
+          image: registry.gitlab.com/mlpds_mit/askcos/askcos-site:2020.07
           command: ["/bin/bash"]
           args: ["-c", "celery -A askcos_site worker -c 5 -Q tffp_worker --pool=gevent -n tffp_worker@%h"]
           envFrom:
