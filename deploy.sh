@@ -70,6 +70,32 @@ fi
 if [ ! -f "customization" ]; then
   cp customization.example customization
 fi
+if [ ! -f "custom_django_settings.py" ]; then
+  echo
+  echo "Setting a unique Django secret key is highly recommended."
+  echo
+  echo "Note that if this is not a new deployment, changing the secret key"
+  echo "will invalidate user sessions. Passwords will not be affected."
+  echo
+  echo "Would you like to use a custom key (c), a random key (r), or the default key (d)?"
+  read -rp ">>> " response
+  case "$response" in
+    [Cc])
+      read -rp "New secret key: " new_secret
+      sed "s/notsosecret/${new_secret}/g" custom_django_settings_example.py > custom_django_settings.py
+      ;;
+    [Rr])
+      echo "Generating random secret key."
+      new_secret=$(base64 /dev/urandom | tr -dc "[:alnum:]" | head -c 32)
+      sed "s/notsosecret/${new_secret}/g" custom_django_settings_example.py > custom_django_settings.py
+      ;;
+    *)
+      echo "Keeping default secret key."
+      cp custom_django_settings_example.py custom_django_settings.py
+      ;;
+  esac
+  echo
+fi
 
 # Get docker compose variables from .env
 source .env
