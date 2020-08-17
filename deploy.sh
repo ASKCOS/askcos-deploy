@@ -310,7 +310,7 @@ seed-db() {
   elif [ -n "$BUYABLES" ]; then
     echo "Loading buyables data from $BUYABLES in background..."
     buyables_file="/data/app/buyables/$(basename $BUYABLES)"
-    docker cp "$BUYABLES" deploy_mongo_1:"$buyables_file"
+    docker cp "$BUYABLES" ${COMPOSE_PROJECT_NAME}_mongo_1:"$buyables_file"
     run-mongo-js "db.buyables.remove({})"
     seed-db-collection buyables "$buyables_file" -d
   fi
@@ -322,7 +322,7 @@ seed-db() {
   elif [ -n "$CHEMICALS" ]; then
     echo "Loading chemicals data from $CHEMICALS in background..."
     chemicals_file="/data/app/historian/$(basename $CHEMICALS)"
-    docker cp "$CHEMICALS" deploy_mongo_1:"$chemicals_file"
+    docker cp "$CHEMICALS" ${COMPOSE_PROJECT_NAME}_mongo_1:"$chemicals_file"
     seed-db-collection chemicals "$chemicals_file" -d
   fi
 
@@ -333,7 +333,7 @@ seed-db() {
   elif [ -n "$REACTIONS" ]; then
     echo "Loading reactions data from $REACTIONS in background..."
     reactions_file="/data/app/historian/$(basename $REACTIONS)"
-    docker cp "$REACTIONS" deploy_mongo_1:"$reactions_file"
+    docker cp "$REACTIONS" ${COMPOSE_PROJECT_NAME}_mongo_1:"$reactions_file"
     seed-db-collection reactions "$reactions_file" -d
   fi
 
@@ -344,7 +344,7 @@ seed-db() {
   elif [ -n "$RETRO_TEMPLATES" ]; then
     echo "Loading retrosynthetic templates from $RETRO_TEMPLATES ..."
     retro_file="/data/app/templates/$(basename $RETRO_TEMPLATES)"
-    docker cp "$RETRO_TEMPLATES" deploy_mongo_1:"$retro_file"
+    docker cp "$RETRO_TEMPLATES" ${COMPOSE_PROJECT_NAME}_mongo_1:"$retro_file"
     seed-db-collection retro_templates "$retro_file"
   fi
 
@@ -355,7 +355,7 @@ seed-db() {
   elif [ -n "$FORWARD_TEMPLATES" ]; then
     echo "Loading forward templates from $FORWARD_TEMPLATES ..."
     forward_file="/data/app/templates/$(basename $FORWARD_TEMPLATES)"
-    docker cp "$FORWARD_TEMPLATES" deploy_mongo_1:"$forward_file"
+    docker cp "$FORWARD_TEMPLATES" ${COMPOSE_PROJECT_NAME}_mongo_1:"$forward_file"
     seed-db-collection forward_templates "$forward_file"
   fi
 
