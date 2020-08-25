@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tb-coordinator-mcts-v2
+  labels:
+    app.kubernetes.io/name: tb-coordinator-mcts-v2
+    app.kubernetes.io/component: celery
+    app.kubernetes.io/part-of: askcos
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      pod: tb-coordinator-mcts-v2
+  template:
+    metadata:
+      labels:
+        pod: tb-coordinator-mcts-v2
+        app.kubernetes.io/name: tb-coordinator-mcts-v2
+        app.kubernetes.io/component: celery
+        app.kubernetes.io/part-of: askcos
+    spec:
+      containers:
+        - name: tb-coordinator-mcts-v2
+          image: registry.gitlab.com/mlpds_mit/askcos/askcos-site:2020.07
+          command: ["/bin/bash"]
+          args: ["-c", "celery -A askcos_site worker -c 1 -Q tb_coordinator_mcts_v2 -n tb_coordinator_mcts@%h --pool gevent --without-heartbeat"]
+          envFrom:
+            - configMapRef:
+                name: django-env
+          resources:
+            requests:
+              memory: "1.0G"
+      imagePullSecrets:
+        - name: regcred

@@ -71,6 +71,15 @@ services:
     volumes:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
 
+  tb_coordinator_mcts_v2:
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
+    restart: always
+    env_file:
+      - .env
+    command: bash -c "celery -A askcos_site worker -c 1 -Q tb_coordinator_mcts_v2 -n tb_coordinator_mcts_v2@%h --pool=gevent --without-heartbeat"
+    volumes:
+      - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+
   tb_c_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
     restart: always

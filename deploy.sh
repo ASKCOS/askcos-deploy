@@ -54,14 +54,15 @@ usage() {
 }
 
 # Worker scales (i.e. number of celery workers)
-n_cr_network_worker=1    # Context recommender neural network worker
-n_tb_coordinator_mcts=2  # Tree builder coordinator
-n_tb_c_worker=1          # Tree builder chiral worker
-n_sites_worker=1         # Site selectivity worker
-n_impurity_worker=1      # Impurity worker
-n_atom_mapping_worker=1  # Atom mapping worker
-n_tffp_worker=1          # Templat-free forward predictor worker
-n_selec_worker=1        # General selectivity worker
+n_cr_network_worker=1       # Context recommender neural network worker
+n_tb_coordinator_mcts=2     # Tree builder coordinator
+n_tb_coordinator_mcts_v2=2  # Tree builder v2 coordinator
+n_tb_c_worker=1             # Tree builder chiral worker
+n_sites_worker=1            # Site selectivity worker
+n_impurity_worker=1         # Impurity worker
+n_atom_mapping_worker=1     # Atom mapping worker
+n_tffp_worker=1             # Template-free forward predictor worker
+n_selec_worker=1            # General selectivity worker
 
 # Create environment variable files from examples if they don't exist
 if [ ! -f ".env" ]; then
@@ -447,6 +448,7 @@ start-celery-workers() {
   echo "Starting celery workers..."
   docker-compose up -d --scale cr_network_worker=$n_cr_network_worker \
                        --scale tb_coordinator_mcts=$n_tb_coordinator_mcts \
+                       --scale tb_coordinator_mcts_v2=$n_tb_coordinator_mcts_v2 \
                        --scale tb_c_worker=$n_tb_c_worker \
                        --scale sites_worker=$n_sites_worker \
                        --scale selec_worker=$n_selec_worker \
@@ -454,7 +456,7 @@ start-celery-workers() {
                        --scale atom_mapping_worker=$n_atom_mapping_worker \
                        --scale tffp_worker=$n_tffp_worker \
                        --remove-orphans \
-                       cr_network_worker tb_coordinator_mcts tb_c_worker \
+                       cr_network_worker tb_coordinator_mcts tb_coordinator_mcts_v2 tb_c_worker \
                        sites_worker selec_worker impurity_worker atom_mapping_worker tffp_worker
   echo "Start up complete."
   echo
