@@ -256,8 +256,8 @@ diff-env() {
 
 clean-data() {
   echo "Cleaning up application data volumes..."
-  docker-compose stop app mongo nginx
-  docker-compose rm -f app mongo nginx
+  docker-compose stop app mongo nginx rabbit
+  docker-compose rm -f app mongo nginx rabbit
   docker volume rm ${COMPOSE_PROJECT_NAME}_appdata
   docker volume rm ${COMPOSE_PROJECT_NAME}_staticdata
   echo "Clean up complete."
