@@ -63,6 +63,7 @@ n_impurity_worker=1         # Impurity worker
 n_atom_mapping_worker=1     # Atom mapping worker
 n_tffp_worker=1             # Template-free forward predictor worker
 n_selec_worker=1            # General selectivity worker
+n_path_ranking_worker=1     # Path ranking worker
 
 # Create environment variable files from examples if they don't exist
 if [ ! -f ".env" ]; then
@@ -455,9 +456,10 @@ start-celery-workers() {
                        --scale impurity_worker=$n_impurity_worker \
                        --scale atom_mapping_worker=$n_atom_mapping_worker \
                        --scale tffp_worker=$n_tffp_worker \
+                       --scale path_ranking_worker=$n_path_ranking_worker \
                        --remove-orphans \
                        cr_network_worker tb_coordinator_mcts tb_coordinator_mcts_v2 tb_c_worker \
-                       sites_worker selec_worker impurity_worker atom_mapping_worker tffp_worker
+                       sites_worker selec_worker impurity_worker atom_mapping_worker tffp_worker path_ranking_worker
   echo "Start up complete."
   echo
 }
