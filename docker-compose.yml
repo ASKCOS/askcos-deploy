@@ -155,6 +155,10 @@ services:
     expose:
       - 8501
 
+  ts-pathway-ranker:
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-data/pathway-ranker:1.0
+    restart: always
+
   redis:
     image: ${PUBLIC_IMAGE_REGISTRY}redis:5.0.7
     hostname: redis
