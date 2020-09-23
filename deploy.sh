@@ -64,6 +64,7 @@ n_atom_mapping_worker=1     # Atom mapping worker
 n_tffp_worker=1             # Template-free forward predictor worker
 n_selec_worker=1            # General selectivity worker
 n_path_ranking_worker=1     # Path ranking worker
+n_descriptors_worker=1      # Descriptors worker
 
 # Create environment variable files from examples if they don't exist
 if [ ! -f ".env" ]; then
@@ -452,7 +453,7 @@ start-web-services() {
 
 start-ml-servers() {
   echo "Starting tensorflow and pytorch servers..."
-  docker-compose up -d --remove-orphans template-relevance-reaxys template-relevance-pistachio fast-filter ts-pathway-ranker
+  docker-compose up -d --remove-orphans template-relevance-reaxys template-relevance-pistachio fast-filter ts-pathway-ranker descriptors
   echo "Start up complete."
   echo
 }
@@ -469,9 +470,10 @@ start-celery-workers() {
                        --scale atom_mapping_worker=$n_atom_mapping_worker \
                        --scale tffp_worker=$n_tffp_worker \
                        --scale path_ranking_worker=$n_path_ranking_worker \
+                       --scale descriptors_worker=$n_descriptors_worker \
                        --remove-orphans \
                        cr_network_worker tb_coordinator_mcts tb_coordinator_mcts_v2 tb_c_worker \
-                       sites_worker selec_worker impurity_worker atom_mapping_worker tffp_worker path_ranking_worker
+                       sites_worker selec_worker impurity_worker atom_mapping_worker tffp_worker path_ranking_worker descriptors_worker
   echo "Start up complete."
   echo
 }
