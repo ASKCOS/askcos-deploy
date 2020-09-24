@@ -63,6 +63,7 @@ n_impurity_worker=1         # Impurity worker
 n_atom_mapping_worker=1     # Atom mapping worker
 n_tffp_worker=1             # Template-free forward predictor worker
 n_selec_worker=1            # General selectivity worker
+n_path_ranking_worker=1     # Path ranking worker
 
 # Create environment variable files from examples if they don't exist
 if [ ! -f ".env" ]; then
@@ -437,9 +438,9 @@ start-web-services() {
   echo
 }
 
-start-tf-server() {
-  echo "Starting tensorflow serving worker..."
-  docker-compose up -d --remove-orphans template-relevance-reaxys fast-filter
+start-ml-servers() {
+  echo "Starting tensorflow and pytorch servers..."
+  docker-compose up -d --remove-orphans template-relevance-reaxys fast-filter ts-pathway-ranker
   echo "Start up complete."
   echo
 }
@@ -455,9 +456,10 @@ start-celery-workers() {
                        --scale impurity_worker=$n_impurity_worker \
                        --scale atom_mapping_worker=$n_atom_mapping_worker \
                        --scale tffp_worker=$n_tffp_worker \
+                       --scale path_ranking_worker=$n_path_ranking_worker \
                        --remove-orphans \
                        cr_network_worker tb_coordinator_mcts tb_coordinator_mcts_v2 tb_c_worker \
-                       sites_worker selec_worker impurity_worker atom_mapping_worker tffp_worker
+                       sites_worker selec_worker impurity_worker atom_mapping_worker tffp_worker path_ranking_worker
   echo "Start up complete."
   echo
 }
@@ -520,7 +522,7 @@ else
   do
     case "$arg" in
       clean-data | start-db-services | seed-db | copy-http-conf | copy-https-conf | create-ssl | pull-images | \
-      start-web-services | start-tf-server | start-celery-workers | migrate | set-db-defaults | count-mongo-docs | \
+      start-web-services | start-ml-servers | start-celery-workers | migrate | set-db-defaults | count-mongo-docs | \
       backup | restore | index-db | diff-env )
         # This is a defined function, so execute it
         $arg
@@ -534,7 +536,7 @@ else
         start-web-services
         set-db-defaults
         seed-db  # Must occur after starting app
-        start-tf-server
+        start-ml-servers
         start-celery-workers
         migrate
         ;;
@@ -547,7 +549,7 @@ else
         start-web-services
         set-db-defaults
         seed-db  # Must occur after starting app
-        start-tf-server
+        start-ml-servers
         start-celery-workers
         migrate
         ;;
@@ -558,7 +560,7 @@ else
         clean-data
         start-db-services
         start-web-services
-        start-tf-server
+        start-ml-servers
         start-celery-workers
         migrate
         ;;
@@ -566,7 +568,7 @@ else
         # (Re)start existing deployment
         start-db-services
         start-web-services
-        start-tf-server
+        start-ml-servers
         start-celery-workers
         ;;
       stop)

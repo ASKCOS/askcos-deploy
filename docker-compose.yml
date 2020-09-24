@@ -134,6 +134,15 @@ services:
     volumes:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
 
+  path_ranking_worker:
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
+    restart: always
+    env_file:
+      - .env
+    command: bash -c "celery -A askcos_site worker -c 1 -Q path_ranking_worker -n path_ranking_worker@%h"
+    volumes:
+      - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+
   template-relevance-reaxys:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos/models:template-relevance-reaxys
     restart: always
@@ -145,6 +154,10 @@ services:
     restart: always
     expose:
       - 8501
+
+  ts-pathway-ranker:
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-data/pathway-ranker:1.0
+    restart: always
 
   redis:
     image: ${PUBLIC_IMAGE_REGISTRY}redis:5.0.7
