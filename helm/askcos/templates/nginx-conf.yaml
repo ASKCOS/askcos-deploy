@@ -1,0 +1,23 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nginx-config
+data:
+  nginx.conf: |
+    upstream django {
+      server 127.0.0.1:8000;
+    }
+
+    server {
+      listen 80;
+      charset     utf-8;
+
+      location /static {
+          alias /static;
+      }
+
+      location / {
+          uwsgi_pass  django;
+          include     /etc/nginx/uwsgi_params;
+      }
+    }
