@@ -3,7 +3,8 @@ kind: Pod
 metadata:
   name: "{{ include "askcos.fullname" . }}-test-connection"
   labels:
-    {{- include "askcos.labels" . | nindent 4 }}
+    {{- include "askcos.common.matchLabels" . | nindent 4 }}
+    {{- include "askcos.common.metaLabels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": test-success
 spec:
@@ -11,5 +12,5 @@ spec:
     - name: wget
       image: busybox
       command: ['wget']
-      args: ['{{ include "askcos.fullname" . }}:{{ .Values.service.port }}']
+      args: ['{{ include "askcos.fullname" . }}:{{ .Values.app.service.port }}']
   restartPolicy: Never
