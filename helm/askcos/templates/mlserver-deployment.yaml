@@ -1,0 +1,56 @@
+{{- range .Values.mlserver }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $.Release.Name }}-{{ .name }}
+  labels:
+    app.kubernetes.io/component: {{ .name }}
+    {{- include "askcos.common.matchLabels" $ | nindent 4 }}
+    {{- include "askcos.common.metaLabels" $ | nindent 4 }}
+spec:
+  replicas: {{ .replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: {{ .name }}
+      {{- include "askcos.common.matchLabels" $ | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: {{ .name }}
+        {{- include "askcos.common.matchLabels" $ | nindent 8 }}
+    spec:
+      {{- with $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "askcos.serviceAccountName" $ }}
+      containers:
+        - name: {{ .name }}
+          image: "{{ .image.repository }}:{{ .image.tag }}"
+          imagePullPolicy: {{ .image.pullPolicy }}
+          ports:
+            - containerPort: {{ .service.port }}
+          {{- if .resources }}
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .name }}
+  labels:
+    app.kubernetes.io/component: {{ .name }}
+    {{- include "askcos.common.matchLabels" $ | nindent 4 }}
+    {{- include "askcos.common.metaLabels" $ | nindent 4 }}
+spec:
+  type: {{ .service.type }}
+  ports:
+  - protocol: TCP
+    port: {{ .service.port }}
+    targetPort: {{ .service.port }}
+  selector:
+    app.kubernetes.io/component: {{ .name }}
+    {{- include "askcos.common.matchLabels" $ | nindent 4 }}
+---
+{{ end }}

@@ -1,55 +1,41 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: django
+  name: {{ include "askcos.fullname" . }}
   labels:
-    app.kubernetes.io/name: django
-    app.kubernetes.io/component: web
-    app.kubernetes.io/part-of: askcos
+    {{- include "askcos.app.labels" . | nindent 4 }}
 spec:
-{{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicas.django }}
-{{- end }}
+  replicas: {{ .Values.app.replicaCount }}
   selector:
     matchLabels:
-      pod: django
+      {{- include "askcos.app.matchLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        pod: django
-        app.kubernetes.io/name: django
-        app.kubernetes.io/component: web
-        app.kubernetes.io/part-of: askcos
+        {{- include "askcos.app.matchLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      serviceAccountName: {{ include "askcos.serviceAccountName" . }}
       volumes:
         - name: staticfiles
           emptyDir: {}
       initContainers:
         - name: migrate
-          image: "{{ .Values.images.askcos.repository }}:{{ .Values.images.askcos.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
           command: ["/bin/bash"]
           args: ["-c", "python /usr/local/askcos-site/manage.py makemigrations main && python /usr/local/askcos-site/manage.py migrate"]
-        - name: collectstatic
-          image: "{{ .Values.images.askcos.repository }}:{{ .Values.images.askcos.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["/bin/bash"]
-          args: ["-c", "cp /usr/local/askcos-site/static/* /static/"]
-          volumeMounts:
-            - name: staticfiles
-              mountPath: /static
       containers:
-        - name: django
-          image: "{{ .Values.images.askcos.repository }}:{{ .Values.images.askcos.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+        - name: {{ .Values.app.name }}
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
           command: ["/bin/bash"]
           args: ["-c", "uwsgi --http :8000 --master --processes=4 --wsgi-file /usr/local/askcos-site/wsgi.py"]
           ports:
-            - containerPort: 8000
+            - containerPort: {{ .Values.app.service.port }}
           envFrom:
             - configMapRef:
                 name: django-env

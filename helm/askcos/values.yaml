@@ -2,37 +2,90 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicas:
-  django: 1
-  atomMappingWorker: 1
-  crNetworkWorker: 1
-  impurityWorker: 1
-  pathRankingWorker: 1
-  selecWorker: 1
-  sitesWorker: 1
-  tbCoordinatorV1: 2
-  tbCoordinatorV2: 2
-  tbCWorker: 1
-  tffpWorker: 1
-
-images:
-  askcos:
+app:
+  name: app
+  image:
     repository: registry.gitlab.com/mlpds_mit/askcos/askcos-site
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
-  fastFilter:
-    repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/fast-filter
-    pullPolicy: IfNotPresent
-    tag: "1.0"
-  templateRelevance:
-    repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/template-relevance
-    pullPolicy: IfNotPresent
-    tag: "1.0"
-  pathwayRanker:
-    repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/pathway-ranker
-    pullPolicy: IfNotPresent
-    tag: "1.0"
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 8000
+
+celery:
+  - name: atommappingworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 3 -Q atom_mapping_worker -n atom_mapping_worker@%h --pool=gevent"
+  - name: crnetworkworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 2 -Q cr_network_worker -n cr_network_worker@%h --pool=gevent"
+  - name: impurityworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 1 -Q impurity_worker -n impurity_worker@%h --pool=gevent"
+  - name: pathrankingworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 1 -Q path_ranking_worker -n path_ranking_worker@%h"
+  - name: selecworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 1 -Q selec_worker -n selec_worker@%h --pool=gevent"
+  - name: sitesworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 1 -Q sites_worker -n sites_worker@%h --pool=gevent"
+  - name: tbcoordinatormctsv1
+    replicaCount: 2
+    cmd: "celery -A askcos_site worker -c 1 -Q tb_coordinator_mcts -n tb_coordinator_mcts@%h --pool=gevent"
+    resources:
+      requests:
+        memory: "1.0G"
+  - name: tbcoordinatormctsv2
+    replicaCount: 2
+    cmd: "celery -A askcos_site worker -c 1 -Q tb_coordinator_mcts_v2 -n tb_coordinator_mcts_v2@%h --pool=gevent"
+    resources:
+      requests:
+        memory: "1.0G"
+  - name: tbcworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 12 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent"
+    resources:
+      requests:
+        memory: "1.0G"
+  - name: tffpworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 5 -Q tffp_worker -n tffp_worker@%h --pool=gevent"
+    resources:
+      requests:
+        memory: "1.0G"
+
+mlserver:
+  - name: fast-filter
+    image:
+      repository: registry.gitlab.com/mlpds_mit/askcos/askcos/models
+      pullPolicy: IfNotPresent
+      tag: "fast-filter"
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8501
+  - name: template-relevance-reaxys
+    image:
+      repository: registry.gitlab.com/mlpds_mit/askcos/askcos/models
+      pullPolicy: IfNotPresent
+      tag: "template-relevance-reaxys"
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8501
+  - name: ts-pathway-ranker
+    image:
+      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/pathway-ranker
+      pullPolicy: IfNotPresent
+      tag: "1.0"
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8080
 
 
 imagePullSecrets: [regcred]
@@ -60,10 +113,6 @@ securityContext: {}
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
-
-service:
-  type: ClusterIP
-  port: 80
 
 ingress:
   enabled: false

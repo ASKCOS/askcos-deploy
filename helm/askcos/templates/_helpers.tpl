@@ -31,23 +31,26 @@ Create chart name and version as used by the chart label.
 {{- end }}
 
 {{/*
-Common labels
+Create a unified set of labels for various components of askcos
 */}}
-{{- define "askcos.labels" -}}
-helm.sh/chart: {{ include "askcos.chart" . }}
-{{ include "askcos.selectorLabels" . }}
-{{- if .Chart.AppVersion }}
-app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- define "askcos.common.matchLabels" -}}
+app.kubernetes.io/part-of: {{ include "askcos.name" . }}
+app.kubernetes.io/release: {{ .Release.Name }}
 {{- end }}
+
+{{- define "askcos.common.metaLabels" -}}
+helm.sh/chart: {{ include "askcos.chart" . }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
-{{/*
-Selector labels
-*/}}
-{{- define "askcos.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "askcos.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+{{- define "askcos.app.matchLabels" -}}
+app.kubernetes.io/component: {{ .Values.app.name }}
+{{ include "askcos.common.matchLabels" . }}
+{{- end }}
+
+{{- define "askcos.app.labels" -}}
+{{ include "askcos.app.matchLabels" . }}
+{{ include "askcos.common.metaLabels" . }}
 {{- end }}
 
 {{/*

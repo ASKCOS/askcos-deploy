@@ -1,16 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: django
+  name: {{ include "askcos.fullname" . }}
   labels:
-    app.kubernetes.io/name: django
-    app.kubernetes.io/component: web
-    app.kubernetes.io/part-of: askcos
+    {{- include "askcos.app.labels" . | nindent 4 }}
 spec:
-  type: ClusterIP
+  type: {{ .Values.app.service.type }}
   ports:
-  - name: django
-    port: 8000
-    targetPort: 8000
+  - name: {{ .Values.app.name }}
+    port: {{ .Values.app.service.port }}
+    targetPort: {{ .Values.app.service.port }}
   selector:
-    pod: django
+    {{- include "askcos.app.matchLabels" . | nindent 4 }}
