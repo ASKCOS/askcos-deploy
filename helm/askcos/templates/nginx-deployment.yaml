@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-{{ .Values.nginx.name }}
+  labels:
+    {{- include "askcos.nginx.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.nginx.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "askcos.nginx.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "askcos.nginx.matchLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "askcos.serviceAccountName" . }}
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-config
+        - name: staticfiles
+          emptyDir: {}
+      initContainers:
+        - name: collectstatic
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          command: ["/bin/sh", "-c", "cp -r /usr/local/askcos-site/static/. /static/"]
+          volumeMounts:
+            - name: staticfiles
+              mountPath: /static
+      containers:
+        - name: {{ .Values.nginx.name }}
+          image: "{{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}"
+          imagePullPolicy: {{ .Values.nginx.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.nginx.containerPorts.http}}
+            {{- if .Values.nginx.containerPorts.https }}
+            - name: https
+              containerPort: {{ .Values.nginx.containerPorts.https }}
+            {{- end }}
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /opt/bitnami/nginx/conf/server_blocks/
+            - name: staticfiles
+              mountPath: /static
+          {{- if .Values.nginx.resources }}
+          resources:
+            {{- toYaml .Values.nginx.resources | nindent 12 }}
+          {{- end }}

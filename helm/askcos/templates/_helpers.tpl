@@ -53,6 +53,16 @@ app.kubernetes.io/component: {{ .Values.app.name }}
 {{ include "askcos.common.metaLabels" . }}
 {{- end }}
 
+{{- define "askcos.nginx.matchLabels" -}}
+app.kubernetes.io/component: {{ .Values.nginx.name }}
+{{ include "askcos.common.matchLabels" . }}
+{{- end }}
+
+{{- define "askcos.nginx.labels" -}}
+{{ include "askcos.nginx.matchLabels" . }}
+{{ include "askcos.common.metaLabels" . }}
+{{- end }}
+
 {{/*
 Create the name of the service account to use
 */}}
