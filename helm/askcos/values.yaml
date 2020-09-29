@@ -2,6 +2,26 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+nameOverride: ""
+fullnameOverride: ""
+
+# Environment and customization variables which will be passed to app
+env:
+  CURRENT_HOST: "*"
+  ORGANIZATION: ""
+  CONTACT_EMAIL: "mlpds_support@mit.edu"
+  SUPPORT_EMAILS: "incoming+mlpds-mit-askcos-askcos-12564933-issue-@incoming.gitlab.com, mlpds_support@mit.edu"
+  ENABLE_SMILES_RESOLVER: "False"
+  AUTH_MODIFY_BUYABLES: "False"
+
+imageCredentials:
+  registry: registry.gitlab.com
+  username: ""
+  password: ""
+
+imagePullSecrets:
+  - name: regcred
+
 app:
   name: app
   image:
@@ -105,12 +125,6 @@ mlserver:
       type: ClusterIP
       port: 8080
 
-
-imagePullSecrets:
-  - name: regcred
-nameOverride: ""
-fullnameOverride: ""
-
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
@@ -120,7 +134,52 @@ serviceAccount:
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
-imageCredentials:
-  registry: registry.gitlab.com
-  username: ""
-  password: ""
+# Values for mongodb subchart
+# See full list of parameters at https://hub.helm.sh/charts/bitnami/mongodb
+mongodb:
+  enabled: true
+  architecture: standalone
+  image:
+    repository: bitnami/mongodb
+    tag: 4.4-debian-10
+  auth:
+    rootPassword: askcos_root
+    username: askcos
+    password: askcos
+    database: askcos
+  resources:
+    limits:
+      memory: 4Gi
+    requests:
+      memory: 4Gi
+  persistence:
+    enabled: true
+    size: 20Gi
+
+# Values for mysql subchart
+# See full list of parameters at https://hub.helm.sh/charts/bitnami/mysql
+mysql:
+  enabled: true
+  image:
+    repository: bitnami/mysql
+    tag: 8.0-debian-10
+  root:
+    password: askcos_root
+  db:
+    name: askcos_db
+
+# Values for rabbitmq subchart
+# See full list of parameters at https://hub.helm.sh/charts/bitnami/rabbitmq
+rabbitmq:
+  image:
+    repository: bitnami/rabbitmq
+    tag: 3.8-debian-10
+
+# Values for redis subchart
+# See full list of parameters at https://hub.helm.sh/charts/bitnami/redis
+redis:
+  image:
+    repository: bitnami/redis
+    tag: 6.0-debian-10
+  cluster:
+    enabled: false

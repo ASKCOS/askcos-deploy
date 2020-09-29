@@ -39,8 +39,6 @@ spec:
           envFrom:
             - configMapRef:
                 name: django-env
-            - configMapRef:
-                name: django-customization
           resources:
             requests:
               memory: "5Gi"
