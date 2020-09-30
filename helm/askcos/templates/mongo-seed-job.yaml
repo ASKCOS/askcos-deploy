@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-mongo-seed
+spec:
+  template:
+    spec:
+      volumes:
+        - name: seed-db-script
+          configMap:
+            name: seed-db-script
+        - name: data-files
+          emptyDir: {}
+      initContainers:
+        - name: copy-data
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          command: ["/bin/sh", "-c", "cp -r /usr/local/askcos-core/askcos/data/. /opt/askcos/data/"]
+          volumeMounts:
+            - name: data-files
+              mountPath: /opt/askcos/data
+        - name: wait-for-mongo
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nslookup {{ .Release.Name }}-mongodb.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for mongodb; sleep 2; done"]
+      containers:
+        - name: seed-db
+          image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+          command: ["/bin/sh", "/opt/askcos/scripts/seed.sh"]
+          envFrom:
+            - configMapRef:
+                name: django-env
+          volumeMounts:
+            - name: seed-db-script
+              mountPath: /opt/askcos/scripts
+            - name: data-files
+              mountPath: /opt/askcos/data
+      restartPolicy: Never
+  backoffLimit: 2
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: seed-db-script
+data:
+  seed.sh: |
+    seed_coll() {
+      # arg 1 is collection name
+      # arg 2 is file path
+      gunzip -c $2 | mongoimport --host ${MONGO_HOST} \
+                                 --username ${MONGO_USER} \
+                                 --password ${MONGO_PW} \
+                                 --authenticationDatabase askcos \
+                                 --db askcos \
+                                 --collection $1 \
+                                 --type json \
+                                 --jsonArray \
+                                 --quiet
+    }
+    seed_coll buyables /opt/askcos/data/buyables/buyables.json.gz
+    seed_coll chemicals /opt/askcos/data/historian/chemicals.json.gz
+    seed_coll retro_templates /opt/askcos/data/templates/retro.templates.json.gz
+    seed_coll forward_templates /opt/askcos/data/templates/forward.templates.json.gz

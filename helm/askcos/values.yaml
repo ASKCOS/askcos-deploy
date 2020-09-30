@@ -147,6 +147,12 @@ mongodb:
     username: askcos
     password: askcos
     database: askcos
+  initdbScripts:
+    initdb.js: |
+      db.buyables.createIndex({smiles: 1, source: 1})
+      db.chemicals.createIndex({smiles: 1, template_set: 1})
+      db.reactions.createIndex({reaction_id: 1, template_set: 1})
+      db.retro_templates.createIndex({index: 1, template_set: 1})
   resources:
     limits:
       memory: 4Gi
