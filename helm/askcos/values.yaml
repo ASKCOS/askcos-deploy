@@ -33,6 +33,9 @@ app:
   service:
     type: ClusterIP
     port: 8000
+  resources:
+    requests:
+      memory: "2.0G"
 
 nginx:
   name: nginx

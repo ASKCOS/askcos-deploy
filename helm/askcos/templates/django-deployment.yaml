@@ -23,22 +23,27 @@ spec:
         - name: staticfiles
           emptyDir: {}
       initContainers:
+        - name: wait-for-mysql
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nslookup {{ .Release.Name }}-mysql.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for mysql; sleep 2; done"]
         - name: migrate
           image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}
-          command: ["/bin/bash"]
-          args: ["-c", "python /usr/local/askcos-site/manage.py makemigrations main && python /usr/local/askcos-site/manage.py migrate"]
+          command: ["/bin/sh", "-c", "python /usr/local/askcos-site/manage.py makemigrations main && python /usr/local/askcos-site/manage.py migrate"]
+          envFrom:
+            - configMapRef:
+                name: django-env
       containers:
         - name: {{ .Values.app.name }}
           image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}
-          command: ["/bin/bash"]
-          args: ["-c", "uwsgi --http :8000 --master --processes=4 --wsgi-file /usr/local/askcos-site/wsgi.py"]
+          command: ["/bin/sh", "-c", "uwsgi --http :{{ .Values.app.service.port }} --master --processes=4 --wsgi-file /usr/local/askcos-site/wsgi.py"]
           ports:
             - containerPort: {{ .Values.app.service.port }}
           envFrom:
             - configMapRef:
                 name: django-env
+          {{- if .Values.app.resources }}
           resources:
-            requests:
-              memory: "5Gi"
+            {{- toYaml .Values.app.resources | nindent 12 }}
+          {{- end }}

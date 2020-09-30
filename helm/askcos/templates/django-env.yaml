@@ -10,6 +10,7 @@ data:
   MONGO_HOST: {{ .Release.Name }}-mongodb
   MONGO_USER: {{ .Values.mongodb.auth.username }}
   MONGO_PW: {{ .Values.mongodb.auth.password }}
+  MONGO_AUTH_DB: {{ .Values.mongodb.auth.database }}
   {{- end }}
   {{- if .Values.mysql.enabled }}
   MYSQL_HOST: {{ .Release.Name }}-mysql
