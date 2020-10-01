@@ -1,3 +1,4 @@
+{{- if .Values.mongoSeed.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -53,10 +54,14 @@ data:
                                  --db askcos \
                                  --collection $1 \
                                  --type json \
-                                 --jsonArray \
-                                 --quiet
+                                 {{- if .Values.mongoSeed.dropColl }}
+                                 --drop \
+                                 {{- end }}
+                                 --jsonArray
     }
-    seed_coll buyables /opt/askcos/data/buyables/buyables.json.gz
-    seed_coll chemicals /opt/askcos/data/historian/chemicals.json.gz
-    seed_coll retro_templates /opt/askcos/data/templates/retro.templates.json.gz
-    seed_coll forward_templates /opt/askcos/data/templates/forward.templates.json.gz
+    seed_coll buyables /opt/askcos/data/buyables/buyables.json.gz &
+    seed_coll chemicals /opt/askcos/data/historian/chemicals.json.gz &
+    seed_coll retro_templates /opt/askcos/data/templates/retro.templates.json.gz &
+    seed_coll forward_templates /opt/askcos/data/templates/forward.templates.json.gz &
+    wait
+{{- end }}

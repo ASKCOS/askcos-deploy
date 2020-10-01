@@ -22,6 +22,12 @@ imageCredentials:
 imagePullSecrets:
   - name: regcred
 
+mongoSeed:
+  # Whether or not to perform first-time data seeding of mongo database
+  enabled: true
+  # Whether to drop existing collections from database
+  dropColl: true
+
 app:
   name: app
   image:
