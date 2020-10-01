@@ -189,6 +189,9 @@ rabbitmq:
   image:
     repository: bitnami/rabbitmq
     tag: 3.8-debian-10
+  auth:
+    username: guest
+    password: guest
 
 # Values for redis subchart
 # See full list of parameters at https://hub.helm.sh/charts/bitnami/redis
@@ -198,3 +201,5 @@ redis:
     tag: 6.0-debian-10
   cluster:
     enabled: false
+  usePassword: false
+  password: ""

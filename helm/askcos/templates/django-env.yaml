@@ -19,6 +19,11 @@ data:
   {{- end }}
   REDIS_HOST: {{ .Release.Name }}-redis-master
   REDIS_PORT: {{ .Values.redis.redisPort | quote }}
+  {{- if .Values.redis.usePassword }}
+  REDIS_PASSWORD: {{ .Values.redis.password }}
+  {{- end }}
   RABBIT_HOST: {{ .Release.Name }}-rabbitmq
   RABBITMQ_NODE_PORT: {{ .Values.rabbitmq.service.port | quote }}
+  RABBITMQ_USER: {{ .Values.rabbitmq.auth.username }}
+  RABBITMQ_PASSWORD: {{ .Values.rabbitmq.auth.password }}
   VERSION_NUMBER: {{ .Chart.AppVersion | quote }}
