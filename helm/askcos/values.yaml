@@ -7,18 +7,28 @@ fullnameOverride: ""
 
 # Environment and customization variables which will be passed to app
 env:
+  # Hostname which is added to Django settings
   CURRENT_HOST: "*"
+  # Custom organization name to include next to ASKCOS logo in navigation bar
   ORGANIZATION: ""
+  # Contact email, displayed in support pop-up dialog
   CONTACT_EMAIL: "mlpds_support@mit.edu"
+  # Default "TO" field for support pop-up dialog submissions
   SUPPORT_EMAILS: "incoming+mlpds-mit-askcos-askcos-12564933-issue-@incoming.gitlab.com, mlpds_support@mit.edu"
+  # Enable SMILES resolver in interactive path planner, which sends data to NIH NCI
   ENABLE_SMILES_RESOLVER: "False"
+  # Sets whether authorization is necessary to modify buyables database
   AUTH_MODIFY_BUYABLES: "False"
 
+# Image credentials for downloading ASKCOS images
 imageCredentials:
   registry: registry.gitlab.com
   username: ""
   password: ""
 
+# Name of the secret to use for registry authentication
+# The above imageCredentials are stored in "regcred"
+# This should only be changed if you would like to use an existing secret
 imagePullSecrets:
   - name: regcred
 
@@ -28,6 +38,7 @@ mongoSeed:
   # Whether to drop existing collections from database
   dropColl: true
 
+# Configuration options for ASKCOS django app deployment
 app:
   name: app
   image:
@@ -43,6 +54,7 @@ app:
     requests:
       memory: "2.0G"
 
+# Configuration options for nginx deployment
 nginx:
   name: nginx
   image:
@@ -61,6 +73,8 @@ nginx:
       http: http
       https: https
 
+# Celery worker definitions - one deployment will be created for each item in the list
+# All of these deployments will use the image defined in app.image
 celery:
   - name: atommappingworker
     replicaCount: 1
@@ -105,6 +119,7 @@ celery:
       requests:
         memory: "1.0G"
 
+# Machine learning server definitions - one deployment will be created for each item in the list
 mlserver:
   - name: fast-filter
     image:
