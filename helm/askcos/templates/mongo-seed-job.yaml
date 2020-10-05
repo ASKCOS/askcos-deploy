@@ -3,6 +3,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ .Release.Name }}-mongo-seed
+  namespace: {{ .Release.Namespace }}
 spec:
   template:
     spec:
@@ -42,6 +43,7 @@ kind: ConfigMap
 apiVersion: v1
 metadata:
   name: seed-db-script
+  namespace: {{ .Release.Namespace }}
 data:
   seed.sh: |
     seed_coll() {
