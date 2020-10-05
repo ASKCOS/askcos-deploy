@@ -6,8 +6,6 @@
 #
 ################################################################################
 
-set -e  # exit with nonzero exit code if anything fails
-
 usage() {
   echo
   echo "Mongo database seeding script for ASKCOS on Kubernetes"
@@ -21,6 +19,7 @@ usage() {
   echo "    -r,--retro-templates          retrosynthetic template data to import into mongo database"
   echo "    -t,--forward-templates        forward template data to import into mongo database"
   echo "    -d,--drop                     drop existing collections before seeding new data"
+  echo "    -n,--namespace                kubernetes namespace in which ASKCOS is deployed"
   echo "    --count                       count documents in every collection"
   echo "    --help                        show help"
   echo
@@ -64,9 +63,13 @@ while (( "$#" )); do
       FORWARD_TEMPLATES=$2
       shift 2
       ;;
-    -d|--drop-collections)
+    -d|--drop)
       DROP=true
       shift 1
+      ;;
+    -n|--namespace)
+      NAMESPACE=$2
+      shift 2
       ;;
     --count)
       COUNT=true
@@ -87,23 +90,30 @@ while (( "$#" )); do
   esac
 done
 
-MONGO_POD=$(kubectl get pod -l app.kubernetes.io/name=mongodb -o jsonpath="{.items[0].metadata.name}")
+MONGO_POD=$(kubectl get pod ${NAMESPACE:+-n $NAMESPACE} -l app.kubernetes.io/name=mongodb -o jsonpath="{.items[0].metadata.name}" 2> /dev/null)
+
+if [ $? -eq 0 ]; then
+  echo "Found mongodb pod: $MONGO_POD"
+else
+  echo "Unable to find mongodb pod. If ASKCOS is deployed in a custom namespace, use the -n argument."
+  exit 1
+fi
 
 run_mongo_js() {
   # arg 1 is js command
-  kubectl exec $MONGO_POD -- bash -c 'mongo --username ${MONGODB_USERNAME} --password ${MONGODB_PASSWORD} localhost/askcos --quiet --eval '"'$1'"
+  kubectl exec ${NAMESPACE:+-n $NAMESPACE} $MONGO_POD -- bash -c 'mongo --username ${MONGODB_USERNAME} --password ${MONGODB_PASSWORD} askcos --quiet --eval '"'$1'"
 }
 
 seed_collection() {
   # arg 1 is collection name
   # arg 2 is file path
-  kubectl exec $MONGO_POD -- bash -c 'gunzip -c '$2' | mongoimport --username ${MONGODB_USERNAME} --password ${MONGODB_PASSWORD} --db askcos --collection '$1' --type json --jsonArray'${DROP:+ --drop}
+  kubectl exec ${NAMESPACE:+-n $NAMESPACE} $MONGO_POD -- bash -c 'gunzip -c '$2' | mongoimport --username ${MONGODB_USERNAME} --password ${MONGODB_PASSWORD} --db askcos --collection '$1' --type json --jsonArray'${DROP:+ --drop}
 }
 
 copy_file() {
   # Copy file into $MONGO_POD
-  kubectl cp "$1" "${MONGO_POD}:$2"
-  }
+  kubectl cp "$1" "${NAMESPACE:+$NAMESPACE/}${MONGO_POD}:$2"
+}
 
 seed_db() {
   if [ -n "$BUYABLES" ]; then
