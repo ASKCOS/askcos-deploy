@@ -163,6 +163,7 @@ serviceAccount:
 mongodb:
   enabled: true
   architecture: standalone
+  useStatefulSet: true
   image:
     repository: bitnami/mongodb
     tag: 4.4-debian-10
@@ -173,6 +174,8 @@ mongodb:
     database: askcos
   initdbScripts:
     initdb.js: |
+      use askcos
+      db.grantRolesToUser("askcos", [{role: "readWrite", db: "results"}])
       db.buyables.createIndex({smiles: 1, source: 1})
       db.chemicals.createIndex({smiles: 1, template_set: 1})
       db.reactions.createIndex({reaction_id: 1, template_set: 1})
