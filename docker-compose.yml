@@ -149,6 +149,12 @@ services:
     expose:
       - 8501
 
+  template-relevance-pistachio:
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos/models:template-relevance-pistachio
+    restart: always
+    expose:
+      - 8501
+
   fast-filter:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos/models:fast-filter
     restart: always
