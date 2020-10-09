@@ -452,7 +452,7 @@ start-web-services() {
 
 start-ml-servers() {
   echo "Starting tensorflow and pytorch servers..."
-  docker-compose up -d --remove-orphans template-relevance-reaxys fast-filter ts-pathway-ranker
+  docker-compose up -d --remove-orphans template-relevance-reaxys template-relevance-pistachio fast-filter ts-pathway-ranker
   echo "Start up complete."
   echo
 }
