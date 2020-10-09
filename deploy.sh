@@ -523,6 +523,29 @@ restore() {
   echo "Restore complete."
 }
 
+post-update-message() {
+  echo
+  echo -e "\033[92m================================================================================\033[00m"
+  echo
+  echo "The local ASKCOS deployment has been updated to version ${VERSION_NUMBER}!"
+  if [ "${VERSION_NUMBER}" = "2020.10" ]; then
+    echo
+    echo "This release includes a new Pistachio-based template relevance model."
+    echo "In order to use the new model, you must import some addition data:"
+    echo
+    echo "    bash deploy.sh seed-db -c pistachio -r pistachio --append"
+  fi
+  echo
+  echo "As a reminder, MongoDB index types were changed in 2020.07 for faster look-ups."
+  echo "If you have not done so already, you should recreate the MongoDB indexes:"
+  echo
+  echo "    bash deploy.sh index-db --drop-indexes"
+  echo
+  echo "Thank you for using ASKCOS!"
+  echo
+  echo -e "\033[92m================================================================================\033[00m"
+}
+
 # Handle positional arguments, which should be commands
 if [ $# -eq 0 ]; then
   # No arguments
@@ -575,6 +598,7 @@ else
         start-ml-servers
         start-celery-workers
         migrate
+        post-update-message
         ;;
       start)
         # (Re)start existing deployment
