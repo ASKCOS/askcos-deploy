@@ -309,7 +309,7 @@ seed-db() {
     echo "Loading default buyables data in background..."
     buyables_file="/data/app/buyables/buyables.json.gz"
     seed-db-collection buyables "$buyables_file" -d
-  elif [ -n "$BUYABLES" ]; then
+  elif [ -f "$BUYABLES" ]; then
     echo "Loading buyables data from $BUYABLES in background..."
     buyables_file="/data/app/buyables/$(basename $BUYABLES)"
     docker cp "$BUYABLES" ${COMPOSE_PROJECT_NAME}_mongo_1:"$buyables_file"
@@ -321,7 +321,13 @@ seed-db() {
     echo "Loading default chemicals data in background..."
     chemicals_file="/data/app/historian/chemicals.json.gz"
     seed-db-collection chemicals "$chemicals_file" -d
-  elif [ -n "$CHEMICALS" ]; then
+    chemicals_file="/data/app/historian/historian.pistachio.json.gz"
+    DB_DROP="" seed-db-collection chemicals "$chemicals_file" -d
+  elif [ "$CHEMICALS" = "pistachio" ]; then
+    echo "Loading pistachio chemicals data in background..."
+    chemicals_file="/data/app/historian/historian.pistachio.json.gz"
+    seed-db-collection chemicals "$chemicals_file" -d
+  elif [ -f "$CHEMICALS" ]; then
     echo "Loading chemicals data from $CHEMICALS in background..."
     chemicals_file="/data/app/historian/$(basename $CHEMICALS)"
     docker cp "$CHEMICALS" ${COMPOSE_PROJECT_NAME}_mongo_1:"$chemicals_file"
@@ -332,7 +338,7 @@ seed-db() {
     echo "Loading default reactions data in background..."
     reactions_file="/data/app/historian/reactions.json.gz"
     seed-db-collection reactions "$reactions_file" -d
-  elif [ -n "$REACTIONS" ]; then
+  elif [ -f "$REACTIONS" ]; then
     echo "Loading reactions data from $REACTIONS in background..."
     reactions_file="/data/app/historian/$(basename $REACTIONS)"
     docker cp "$REACTIONS" ${COMPOSE_PROJECT_NAME}_mongo_1:"$reactions_file"
@@ -343,7 +349,13 @@ seed-db() {
     echo "Loading default retrosynthetic templates..."
     retro_file="/data/app/templates/retro.templates.json.gz"
     seed-db-collection retro_templates "$retro_file"
-  elif [ -n "$RETRO_TEMPLATES" ]; then
+    retro_file="/data/app/templates/retro.templates.pistachio.json.gz"
+    DB_DROP="" seed-db-collection retro_templates "$retro_file"
+  elif [ "$RETRO_TEMPLATES" = "pistachio" ]; then
+    echo "Loading pistachio retrosynthetic templates..."
+    retro_file="/data/app/templates/retro.templates.pistachio.json.gz"
+    seed-db-collection retro_templates "$retro_file"
+  elif [ -f "$RETRO_TEMPLATES" ]; then
     echo "Loading retrosynthetic templates from $RETRO_TEMPLATES ..."
     retro_file="/data/app/templates/$(basename $RETRO_TEMPLATES)"
     docker cp "$RETRO_TEMPLATES" ${COMPOSE_PROJECT_NAME}_mongo_1:"$retro_file"
@@ -354,7 +366,7 @@ seed-db() {
     echo "Loading default forward templates..."
     forward_file="/data/app/templates/forward.templates.json.gz"
     seed-db-collection forward_templates "$forward_file"
-  elif [ -n "$FORWARD_TEMPLATES" ]; then
+  elif [ -f "$FORWARD_TEMPLATES" ]; then
     echo "Loading forward templates from $FORWARD_TEMPLATES ..."
     forward_file="/data/app/templates/$(basename $FORWARD_TEMPLATES)"
     docker cp "$FORWARD_TEMPLATES" ${COMPOSE_PROJECT_NAME}_mongo_1:"$forward_file"
