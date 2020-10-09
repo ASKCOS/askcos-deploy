@@ -626,7 +626,7 @@ else
         esac
         ;;
       *)
-        echo "Error: Unsupported command $1" >&2  # print to stderr
+        echo "Error: Unsupported command $arg" >&2  # print to stderr
         exit 1;
     esac
   done
