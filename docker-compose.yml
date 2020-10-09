@@ -174,8 +174,12 @@ services:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-data/pathway-ranker:1.0
     restart: always
 
-  descriptors:
+  ts-descriptors:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-data/descriptors:1.0
+    restart: always
+
+  ts-rxnmapper:
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-base/rxnmapper:0.1.2
     restart: always
 
   redis:
