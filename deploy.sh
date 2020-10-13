@@ -309,7 +309,7 @@ seed-db() {
     echo "Loading default buyables data in background..."
     buyables_file="/data/app/buyables/buyables.json.gz"
     seed-db-collection buyables "$buyables_file" -d
-  elif [ -n "$BUYABLES" ]; then
+  elif [ -f "$BUYABLES" ]; then
     echo "Loading buyables data from $BUYABLES in background..."
     buyables_file="/data/app/buyables/$(basename $BUYABLES)"
     docker cp "$BUYABLES" ${COMPOSE_PROJECT_NAME}_mongo_1:"$buyables_file"
@@ -321,7 +321,13 @@ seed-db() {
     echo "Loading default chemicals data in background..."
     chemicals_file="/data/app/historian/chemicals.json.gz"
     seed-db-collection chemicals "$chemicals_file" -d
-  elif [ -n "$CHEMICALS" ]; then
+    chemicals_file="/data/app/historian/historian.pistachio.json.gz"
+    DB_DROP="" seed-db-collection chemicals "$chemicals_file" -d
+  elif [ "$CHEMICALS" = "pistachio" ]; then
+    echo "Loading pistachio chemicals data in background..."
+    chemicals_file="/data/app/historian/historian.pistachio.json.gz"
+    seed-db-collection chemicals "$chemicals_file" -d
+  elif [ -f "$CHEMICALS" ]; then
     echo "Loading chemicals data from $CHEMICALS in background..."
     chemicals_file="/data/app/historian/$(basename $CHEMICALS)"
     docker cp "$CHEMICALS" ${COMPOSE_PROJECT_NAME}_mongo_1:"$chemicals_file"
@@ -332,7 +338,7 @@ seed-db() {
     echo "Loading default reactions data in background..."
     reactions_file="/data/app/historian/reactions.json.gz"
     seed-db-collection reactions "$reactions_file" -d
-  elif [ -n "$REACTIONS" ]; then
+  elif [ -f "$REACTIONS" ]; then
     echo "Loading reactions data from $REACTIONS in background..."
     reactions_file="/data/app/historian/$(basename $REACTIONS)"
     docker cp "$REACTIONS" ${COMPOSE_PROJECT_NAME}_mongo_1:"$reactions_file"
@@ -343,7 +349,13 @@ seed-db() {
     echo "Loading default retrosynthetic templates..."
     retro_file="/data/app/templates/retro.templates.json.gz"
     seed-db-collection retro_templates "$retro_file"
-  elif [ -n "$RETRO_TEMPLATES" ]; then
+    retro_file="/data/app/templates/retro.templates.pistachio.json.gz"
+    DB_DROP="" seed-db-collection retro_templates "$retro_file"
+  elif [ "$RETRO_TEMPLATES" = "pistachio" ]; then
+    echo "Loading pistachio retrosynthetic templates..."
+    retro_file="/data/app/templates/retro.templates.pistachio.json.gz"
+    seed-db-collection retro_templates "$retro_file"
+  elif [ -f "$RETRO_TEMPLATES" ]; then
     echo "Loading retrosynthetic templates from $RETRO_TEMPLATES ..."
     retro_file="/data/app/templates/$(basename $RETRO_TEMPLATES)"
     docker cp "$RETRO_TEMPLATES" ${COMPOSE_PROJECT_NAME}_mongo_1:"$retro_file"
@@ -354,7 +366,7 @@ seed-db() {
     echo "Loading default forward templates..."
     forward_file="/data/app/templates/forward.templates.json.gz"
     seed-db-collection forward_templates "$forward_file"
-  elif [ -n "$FORWARD_TEMPLATES" ]; then
+  elif [ -f "$FORWARD_TEMPLATES" ]; then
     echo "Loading forward templates from $FORWARD_TEMPLATES ..."
     forward_file="/data/app/templates/$(basename $FORWARD_TEMPLATES)"
     docker cp "$FORWARD_TEMPLATES" ${COMPOSE_PROJECT_NAME}_mongo_1:"$forward_file"
@@ -384,11 +396,11 @@ index-db() {
 }
 
 count-mongo-docs() {
-  echo "Buyables collection:          $(run-mongo-js "db.buyables.countDocuments({})" | tr -d '\r') / 280469 expected (default)"
-  echo "Chemicals collection:         $(run-mongo-js "db.chemicals.countDocuments({})" | tr -d '\r') / 17562038 expected (default)"
-  echo "Reactions collection:         $(run-mongo-js "db.reactions.countDocuments({})" | tr -d '\r') / 0 expected (default)"
-  echo "Retro template collection:    $(run-mongo-js "db.retro_templates.countDocuments({})" | tr -d '\r') / 163723 expected (default)"
-  echo "Forward template collection:  $(run-mongo-js "db.forward_templates.countDocuments({})" | tr -d '\r') / 17089 expected (default)"
+  echo "Buyables collection:          $(run-mongo-js "db.buyables.estimatedDocumentCount({})" | tr -d '\r') / 280469 expected (default)"
+  echo "Chemicals collection:         $(run-mongo-js "db.chemicals.estimatedDocumentCount({})" | tr -d '\r') / 19175563 expected (default)"
+  echo "Reactions collection:         $(run-mongo-js "db.reactions.estimatedDocumentCount({})" | tr -d '\r') / 0 expected (default)"
+  echo "Retro template collection:    $(run-mongo-js "db.retro_templates.estimatedDocumentCount({})" | tr -d '\r') / 383259 expected (default)"
+  echo "Forward template collection:  $(run-mongo-js "db.forward_templates.estimatedDocumentCount({})" | tr -d '\r') / 17089 expected (default)"
 }
 
 copy-http-conf() {
@@ -440,7 +452,7 @@ start-web-services() {
 
 start-ml-servers() {
   echo "Starting tensorflow and pytorch servers..."
-  docker-compose up -d --remove-orphans template-relevance-reaxys fast-filter ts-pathway-ranker
+  docker-compose up -d --remove-orphans template-relevance-reaxys template-relevance-pistachio fast-filter ts-pathway-ranker
   echo "Start up complete."
   echo
 }
@@ -511,6 +523,41 @@ restore() {
   echo "Restore complete."
 }
 
+post-update-message() {
+  echo
+  echo -e "\033[92m================================================================================\033[00m"
+  echo
+  echo "The local ASKCOS deployment has been updated to version ${VERSION_NUMBER}!"
+  echo
+  echo "Please note the following items which may require further action:"
+  echo
+  echo -n "1) "
+  if [ "${VERSION_NUMBER}" = "2020.10" ]; then
+    echo "This release includes a new Pistachio-based template relevance model."
+    echo "   In order to use the new model, you must import some additional data:"
+    echo
+    echo "       bash deploy.sh seed-db -c pistachio -r pistachio --append"
+    echo
+    echo "2) The buyables database has been expanded to include more sources."
+    echo "   To import the new buyables data, you can run the following:"
+    echo
+    echo "       bash deploy.sh seed-db -b default --append"
+    echo
+    echo "   If no custom buyables have been added and you would like to remove existing"
+    echo "   buyables data before importing, you can omit the '--append' argument."
+    echo
+    echo -n "3) "
+  fi
+  echo "The MongoDB index types were changed in 2020.07 for much faster look-ups."
+  echo "   If you have not done so already, you should recreate the MongoDB indexes:"
+  echo
+  echo "       bash deploy.sh index-db --drop-indexes"
+  echo
+  echo "                      ~~~ Thank you for using ASKCOS! ~~~"
+  echo
+  echo -e "\033[92m================================================================================\033[00m"
+}
+
 # Handle positional arguments, which should be commands
 if [ $# -eq 0 ]; then
   # No arguments
@@ -563,6 +610,7 @@ else
         start-ml-servers
         start-celery-workers
         migrate
+        post-update-message
         ;;
       start)
         # (Re)start existing deployment
@@ -590,7 +638,7 @@ else
         esac
         ;;
       *)
-        echo "Error: Unsupported command $1" >&2  # print to stderr
+        echo "Error: Unsupported command $arg" >&2  # print to stderr
         exit 1;
     esac
   done

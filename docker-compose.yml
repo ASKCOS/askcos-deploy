@@ -144,7 +144,13 @@ services:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
 
   template-relevance-reaxys:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos/models:template-relevance-reaxys
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-data/template-relevance-reaxys:1.0
+    restart: always
+    expose:
+      - 8501
+
+  template-relevance-pistachio:
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-data/template-relevance-pistachio:1.0
     restart: always
     expose:
       - 8501
