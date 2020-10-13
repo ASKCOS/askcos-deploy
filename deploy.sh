@@ -528,20 +528,32 @@ post-update-message() {
   echo -e "\033[92m================================================================================\033[00m"
   echo
   echo "The local ASKCOS deployment has been updated to version ${VERSION_NUMBER}!"
+  echo
+  echo "Please note the following items which may require further action:"
+  echo
+  echo -n "1) "
   if [ "${VERSION_NUMBER}" = "2020.10" ]; then
-    echo
     echo "This release includes a new Pistachio-based template relevance model."
-    echo "In order to use the new model, you must import some addition data:"
+    echo "   In order to use the new model, you must import some additional data:"
     echo
-    echo "    bash deploy.sh seed-db -c pistachio -r pistachio --append"
+    echo "       bash deploy.sh seed-db -c pistachio -r pistachio --append"
+    echo
+    echo "2) The buyables database has been expanded to include more sources."
+    echo "   To import the new buyables data, you can run the following:"
+    echo
+    echo "       bash deploy.sh seed-db -b default --append"
+    echo
+    echo "   If no custom buyables have been added and you would like to remove existing"
+    echo "   buyables data before importing, you can omit the '--append' argument."
+    echo
+    echo -n "3) "
   fi
+  echo "The MongoDB index types were changed in 2020.07 for much faster look-ups."
+  echo "   If you have not done so already, you should recreate the MongoDB indexes:"
   echo
-  echo "As a reminder, MongoDB index types were changed in 2020.07 for faster look-ups."
-  echo "If you have not done so already, you should recreate the MongoDB indexes:"
+  echo "       bash deploy.sh index-db --drop-indexes"
   echo
-  echo "    bash deploy.sh index-db --drop-indexes"
-  echo
-  echo "Thank you for using ASKCOS!"
+  echo "                      ~~~ Thank you for using ASKCOS! ~~~"
   echo
   echo -e "\033[92m================================================================================\033[00m"
 }
