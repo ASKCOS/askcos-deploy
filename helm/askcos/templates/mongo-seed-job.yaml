@@ -46,6 +46,9 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   seed.sh: |
+    {{- if .Values.mongoSeed.dropColl }}
+    DROP="--drop"
+    {{- end }}
     seed_coll() {
       # arg 1 is collection name
       # arg 2 is file path
@@ -56,15 +59,17 @@ data:
                                  --db askcos \
                                  --collection $1 \
                                  --type json \
-                                 {{- if .Values.mongoSeed.dropColl }}
-                                 --drop \
-                                 {{- end }}
-                                 --jsonArray
+                                 --jsonArray ${DROP}
     }
     seed_coll buyables /opt/askcos/data/buyables/buyables.json.gz &
     seed_coll chemicals /opt/askcos/data/historian/chemicals.json.gz &
     seed_coll retro_templates /opt/askcos/data/templates/retro.templates.json.gz &
     seed_coll forward_templates /opt/askcos/data/templates/forward.templates.json.gz &
+    {{- if .Values.mongoSeed.dropColl }}
+    DROP=""
+    {{- end }}
+    seed_coll chemicals /opt/askcos/data/historian/historian.pistachio.json.gz &
+    seed_coll retro_templates /opt/askcos/data/templates/retro.templates.pistachio.json.gz &
     wait
     {{- if .Values.mongoSeed.dropColl }}
     # Need to index again since we dropped the collections

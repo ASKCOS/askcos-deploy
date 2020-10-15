@@ -156,9 +156,9 @@ seed_db() {
 
 count_docs() {
   echo "Buyables collection:          $(run_mongo_js "db.buyables.estimatedDocumentCount()" | tr -d '\r') / 280469 expected (default)"
-  echo "Chemicals collection:         $(run_mongo_js "db.chemicals.estimatedDocumentCount()" | tr -d '\r') / 17562038 expected (default)"
+  echo "Chemicals collection:         $(run_mongo_js "db.chemicals.estimatedDocumentCount()" | tr -d '\r') / 19175563 expected (default)"
   echo "Reactions collection:         $(run_mongo_js "db.reactions.estimatedDocumentCount()" | tr -d '\r') / 0 expected (default)"
-  echo "Retro template collection:    $(run_mongo_js "db.retro_templates.estimatedDocumentCount()" | tr -d '\r') / 163723 expected (default)"
+  echo "Retro template collection:    $(run_mongo_js "db.retro_templates.estimatedDocumentCount()" | tr -d '\r') / 383259 expected (default)"
   echo "Forward template collection:  $(run_mongo_js "db.forward_templates.estimatedDocumentCount()" | tr -d '\r') / 17089 expected (default)"
 }
 
