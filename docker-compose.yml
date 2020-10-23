@@ -165,7 +165,7 @@ services:
       - 8501
 
   fast-filter:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos/models:fast-filter
+    image: ${ASKCOS_IMAGE_REGISTRY}askcos-data/fast-filter:1.0
     restart: always
     expose:
       - 8501
