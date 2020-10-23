@@ -82,6 +82,9 @@ celery:
   - name: crnetworkworker
     replicaCount: 1
     cmd: "celery -A askcos_site worker -c 2 -Q cr_network_worker -n cr_network_worker@%h --pool=gevent"
+  - name: descriptorsworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 1 -Q descriptors_worker -n descriptors_worker@%h"
   - name: impurityworker
     replicaCount: 1
     cmd: "celery -A askcos_site worker -c 1 -Q impurity_worker -n impurity_worker@%h --pool=gevent"
@@ -153,6 +156,24 @@ mlserver:
       repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/pathway-ranker
       pullPolicy: IfNotPresent
       tag: "1.0"
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8080
+  - name: ts-descriptors
+    image:
+      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/descriptors
+      pullPolicy: IfNotPresent
+      tag: "1.0"
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8080
+  - name: ts-rxnmapper
+    image:
+      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-base/rxnmapper
+      pullPolicy: IfNotPresent
+      tag: "0.1.2"
     replicaCount: 1
     service:
       type: ClusterIP
