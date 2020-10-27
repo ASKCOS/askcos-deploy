@@ -1,7 +1,7 @@
 version: '2.2'
 services:
   nginx:
-    image: ${PUBLIC_IMAGE_REGISTRY}nginx:1.17.6
+    image: ${PUBLIC_IMAGE_REGISTRY}nginx:1.19-alpine
     restart: always
     volumes:
       - './nginx.conf:/etc/nginx/nginx.conf'
@@ -25,7 +25,7 @@ services:
       - '3306'
 
   mongo:
-    image: ${PUBLIC_IMAGE_REGISTRY}mongo:4.2.2
+    image: ${PUBLIC_IMAGE_REGISTRY}mongo:4.2
     command: --wiredTigerCacheSizeGB 1.5
     hostname: mongo
     restart: always
@@ -183,7 +183,7 @@ services:
     restart: always
 
   redis:
-    image: ${PUBLIC_IMAGE_REGISTRY}redis:5.0.7
+    image: ${PUBLIC_IMAGE_REGISTRY}redis:6.0-alpine
     hostname: redis
     env_file:
       - .env
@@ -195,7 +195,7 @@ services:
     command: redis-server --port ${REDIS_PORT}
 
   rabbit:
-    image: ${PUBLIC_IMAGE_REGISTRY}rabbitmq:3.8.2
+    image: ${PUBLIC_IMAGE_REGISTRY}rabbitmq:3.8-alpine
     hostname: rabbit
     env_file:
       - .env
