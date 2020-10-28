@@ -26,7 +26,7 @@ spec:
       initContainers:
         - name: wait-for-mysql
           image: alpine:3.12
-          command: ["/bin/sh", "-c", "until nslookup {{ .Release.Name }}-mysql.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for mysql; sleep 2; done"]
+          command: ["/bin/sh", "-c", "until nc -z {{ .Release.Name }}-mysql {{ .Values.mysql.service.port }}; do echo waiting for mysql; sleep 2; done"]
         - name: migrate
           image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}
