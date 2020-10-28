@@ -23,7 +23,7 @@ spec:
               mountPath: /opt/askcos/data
         - name: wait-for-mongo
           image: alpine:3.12
-          command: ["/bin/sh", "-c", "until nslookup {{ .Release.Name }}-mongodb.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for mongodb; sleep 2; done"]
+          command: ["/bin/sh", "-c", "until nc -z {{ .Release.Name }}-mongodb {{ .Values.mongodb.service.port }}; do echo waiting for mongodb; sleep 2; done"]
       containers:
         - name: seed-db
           image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
