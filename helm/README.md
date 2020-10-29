@@ -15,7 +15,7 @@ helm install --set imageCredentials.username=XXXX --set imageCredentials.passwor
 The ASKCOS image tag to deploy can be overridden by `app.image.tag` value.
 
 ```bash
-helm install --set imageCredentials.username=XXXX --set imageCredentials.password=YYYY --set app.image.tag=2020.07 mydeploy ./askcos
+helm install --set imageCredentials.username=XXXX --set imageCredentials.password=YYYY --set app.image.tag=2020.10 mydeploy ./askcos
 ```
 
 There are many other options which can be changed. The best place to see them is in the `values.yaml` file. Additionally, since the ASKCOS chart uses bitnami charts for mongodb, mysql, rabbitmq, and redis, the full set of configuration options for those charts can be found from the bitnami documentation (specific links are provided in `values.yaml`).
@@ -35,7 +35,7 @@ imageCredentials:
 
 app:
   image:
-    tag: 2020.07
+    tag: 2020.10
 
 env:
   ORGANIZATION: mycompany
