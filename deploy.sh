@@ -258,8 +258,7 @@ diff-env() {
 
 clean-data() {
   echo "Cleaning up application data volumes..."
-  docker-compose stop app mongo nginx rabbit
-  docker-compose rm -f app mongo nginx rabbit
+  docker-compose rm -fsv app mongo nginx rabbit
   docker volume rm ${COMPOSE_PROJECT_NAME}_appdata
   docker volume rm ${COMPOSE_PROJECT_NAME}_staticdata
   echo "Clean up complete."
@@ -533,24 +532,20 @@ post-update-message() {
   echo
   echo "Please note the following items which may require further action:"
   echo
-  echo -n "1) "
-  if [ "${VERSION_NUMBER}" = "2020.10" ]; then
-    echo "This release includes a new Pistachio-based template relevance model."
-    echo "   In order to use the new model, you must import some additional data:"
-    echo
-    echo "       bash deploy.sh seed-db -c pistachio -r pistachio --append"
-    echo
-    echo "2) The buyables database has been expanded to include more sources."
-    echo "   To import the new buyables data, you can run the following:"
-    echo
-    echo "       bash deploy.sh seed-db -b default --append"
-    echo
-    echo "   If no custom buyables have been added and you would like to remove existing"
-    echo "   buyables data before importing, you can omit the '--append' argument."
-    echo
-    echo -n "3) "
-  fi
-  echo "The MongoDB index types were changed in 2020.07 for much faster look-ups."
+  echo "1) ASKCOS 2020.10 includes a new Pistachio-based template relevance model."
+  echo "   In order to use the new model, you must import some additional data:"
+  echo
+  echo "       bash deploy.sh seed-db -c pistachio -r pistachio --append"
+  echo
+  echo "2) ASKCOS 2020.10 includes updated buyables data with more sources."
+  echo "   To import the new buyables data, you can run the following:"
+  echo
+  echo "       bash deploy.sh seed-db -b default --append"
+  echo
+  echo "   If no custom buyables have been added and you would like to remove existing"
+  echo "   buyables data before importing, you can omit the '--append' argument."
+  echo
+  echo "3) ASKCOS 2020.07 changed the default MongoDB index types for much faster look-ups."
   echo "   If you have not done so already, you should recreate the MongoDB indexes:"
   echo
   echo "       bash deploy.sh index-db --drop-indexes"
