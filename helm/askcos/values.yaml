@@ -1,0 +1,253 @@
+# Default values for askcos.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Environment and customization variables which will be passed to app
+env:
+  # Hostname which is added to Django settings
+  CURRENT_HOST: "*"
+  # Custom organization name to include next to ASKCOS logo in navigation bar
+  ORGANIZATION: ""
+  # Contact email, displayed in support pop-up dialog
+  CONTACT_EMAIL: "mlpds_support@mit.edu"
+  # Default "TO" field for support pop-up dialog submissions
+  SUPPORT_EMAILS: "incoming+mlpds-mit-askcos-askcos-12564933-issue-@incoming.gitlab.com, mlpds_support@mit.edu"
+  # Enable SMILES resolver in interactive path planner, which sends data to NIH NCI
+  ENABLE_SMILES_RESOLVER: "False"
+  # Sets whether authorization is necessary to modify buyables database
+  AUTH_MODIFY_BUYABLES: "False"
+
+# Image credentials for downloading ASKCOS images
+imageCredentials:
+  registry: registry.gitlab.com
+  username: ""
+  password: ""
+
+# Name of the secret to use for registry authentication
+# The above imageCredentials are stored in "regcred"
+# This should only be changed if you would like to use an existing secret
+imagePullSecrets:
+  - name: regcred
+
+mongoSeed:
+  # Whether or not to perform first-time data seeding of mongo database
+  enabled: true
+  # Whether to drop existing collections from database
+  dropColl: true
+
+# Configuration options for ASKCOS django app deployment
+app:
+  name: app
+  image:
+    repository: registry.gitlab.com/mlpds_mit/askcos/askcos-site
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: ""
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 8000
+  resources:
+    requests:
+      memory: "2.0G"
+
+# Configuration options for nginx deployment
+nginx:
+  name: nginx
+  image:
+    repository: bitnami/nginx
+    pullPolicy: IfNotPresent
+    tag: 1.19-debian-10
+  replicaCount: 1
+  containerPorts:
+    http: 8080
+    # https: 8443
+  service:
+    type: LoadBalancer
+    port: 80
+    httpsPort: 443
+    targetPort:
+      http: http
+      https: https
+
+# Celery worker definitions - one deployment will be created for each item in the list
+# All of these deployments will use the image defined in app.image
+celery:
+  - name: atommappingworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 3 -Q atom_mapping_worker -n atom_mapping_worker@%h --pool=gevent"
+  - name: crnetworkworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 2 -Q cr_network_worker -n cr_network_worker@%h --pool=gevent"
+  - name: descriptorsworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 1 -Q descriptors_worker -n descriptors_worker@%h"
+  - name: impurityworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 1 -Q impurity_worker -n impurity_worker@%h --pool=gevent"
+  - name: pathrankingworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 1 -Q path_ranking_worker -n path_ranking_worker@%h"
+  - name: selecworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 1 -Q selec_worker -n selec_worker@%h --pool=gevent"
+  - name: sitesworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 1 -Q sites_worker -n sites_worker@%h --pool=gevent"
+  - name: tbcoordinatormctsv1
+    replicaCount: 2
+    cmd: "celery -A askcos_site worker -c 1 -Q tb_coordinator_mcts -n tb_coordinator_mcts@%h --pool=gevent"
+    resources:
+      requests:
+        memory: "1.0G"
+  - name: tbcoordinatormctsv2
+    replicaCount: 2
+    cmd: "celery -A askcos_site worker -c 1 -Q tb_coordinator_mcts_v2 -n tb_coordinator_mcts_v2@%h --pool=gevent"
+    resources:
+      requests:
+        memory: "1.0G"
+  - name: tbcworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 12 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent"
+    resources:
+      requests:
+        memory: "1.0G"
+  - name: tffpworker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 5 -Q tffp_worker -n tffp_worker@%h --pool=gevent"
+    resources:
+      requests:
+        memory: "1.0G"
+
+# Machine learning server definitions - one deployment will be created for each item in the list
+mlserver:
+  - name: fast-filter
+    image:
+      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/fast-filter
+      pullPolicy: IfNotPresent
+      tag: "1.0"
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8501
+  - name: template-relevance-reaxys
+    image:
+      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/template-relevance-reaxys
+      pullPolicy: IfNotPresent
+      tag: "1.0"
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8501
+  - name: template-relevance-pistachio
+    image:
+      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/template-relevance-pistachio
+      pullPolicy: IfNotPresent
+      tag: "1.0"
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8501
+  - name: ts-pathway-ranker
+    image:
+      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/pathway-ranker
+      pullPolicy: IfNotPresent
+      tag: "1.0"
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8080
+  - name: ts-descriptors
+    image:
+      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/descriptors
+      pullPolicy: IfNotPresent
+      tag: "1.0"
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8080
+  - name: ts-rxnmapper
+    image:
+      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-base/rxnmapper
+      pullPolicy: IfNotPresent
+      tag: "0.1.2"
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 8080
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# Values for mongodb subchart
+# See full list of parameters at https://hub.helm.sh/charts/bitnami/mongodb
+mongodb:
+  enabled: true
+  architecture: standalone
+  useStatefulSet: true
+  image:
+    repository: bitnami/mongodb
+    tag: 4.4-debian-10
+  auth:
+    rootPassword: askcos_root
+    username: askcos
+    password: askcos
+    database: askcos
+  initdbScripts:
+    initdb.js: |
+      use askcos
+      db.grantRolesToUser("askcos", [{role: "readWrite", db: "results"}])
+      db.buyables.createIndex({smiles: 1, source: 1})
+      db.chemicals.createIndex({smiles: 1, template_set: 1})
+      db.reactions.createIndex({reaction_id: 1, template_set: 1})
+      db.retro_templates.createIndex({index: 1, template_set: 1})
+  resources:
+    limits:
+      memory: 4Gi
+    requests:
+      memory: 4Gi
+  persistence:
+    enabled: true
+    size: 20Gi
+
+# Values for mysql subchart
+# See full list of parameters at https://hub.helm.sh/charts/bitnami/mysql
+mysql:
+  enabled: true
+  image:
+    repository: bitnami/mysql
+    tag: 8.0-debian-10
+  root:
+    password: askcos_root
+  db:
+    name: askcos_db
+
+# Values for rabbitmq subchart
+# See full list of parameters at https://hub.helm.sh/charts/bitnami/rabbitmq
+rabbitmq:
+  image:
+    repository: bitnami/rabbitmq
+    tag: 3.8-debian-10
+  auth:
+    username: guest
+    password: guest
+
+# Values for redis subchart
+# See full list of parameters at https://hub.helm.sh/charts/bitnami/redis
+redis:
+  image:
+    repository: bitnami/redis
+    tag: 6.0-debian-10
+  cluster:
+    enabled: false
+  usePassword: false
+  password: ""

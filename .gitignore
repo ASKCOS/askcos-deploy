@@ -17,3 +17,4 @@ askcos.ssl.key
 .env
 customization
 nginx.conf
+custom_django_settings.py

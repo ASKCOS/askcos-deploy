@@ -2,17 +2,27 @@
 
 ################################################################################
 #
-#   ASKCOS Deployment Utilities for Kubernetes
+#   ASKCOS Deployment Utilities for Kubernetes (deprecated)
 #
 #    ~ To streamline deployment commands ~
 #
 ################################################################################
 
+echo
+echo -e "\033[91m************************* DEPRECATION WARNING *************************\033[00m"
+echo "This deployment script and the associated kubernetes configuration are"
+echo "no longer supported, and should only be used to deploy ASKCOS 2020.07."
+echo
+echo "Instead, please use the Helm chart located in the ./helm directory."
+echo
+echo "See ./helm/README.md for basic installation instructions."
+echo -e "\033[91m***********************************************************************\033[00m"
+
 set -e  # exit with nonzero exit code if anything fails
 
 usage() {
   echo
-  echo "Deployment Utilities for ASKCOS"
+  echo "Deployment Utilities for ASKCOS (deprecated)"
   echo
   echo "Specify a task to perform, along with any desired options."
   echo
@@ -196,10 +206,10 @@ create-secret() {
 
 start-db-services() {
   echo "Starting database services..."
-  kubectl apply -f k8/mysql
-  kubectl apply -f k8/mongo
-  kubectl apply -f k8/redis
-  kubectl apply -f k8/rabbitmq
+  kubectl apply -f legacy_k8/mysql
+  kubectl apply -f legacy_k8/mongo
+  kubectl apply -f legacy_k8/redis
+  kubectl apply -f legacy_k8/rabbitmq
   echo "Start up complete."
   echo
 }
@@ -394,7 +404,7 @@ index-db() {
 
 count-mongo-docs() {
   mongo=$(kubectl get pod -l pod=mongo -o jsonpath="{.items[0].metadata.name}")
-  echo "Buyables collection:          $(run-mongo-js "db.buyables.countDocuments({})" | tr -d '\r') / 106750 expected (default)"
+  echo "Buyables collection:          $(run-mongo-js "db.buyables.countDocuments({})" | tr -d '\r') / 280469 expected (default)"
   echo "Chemicals collection:         $(run-mongo-js "db.chemicals.countDocuments({})" | tr -d '\r') / 17562038 expected (default)"
   echo "Reactions collection:         $(run-mongo-js "db.reactions.countDocuments({})" | tr -d '\r') / 0 expected (default)"
   echo "Retro template collection:    $(run-mongo-js "db.retro_templates.countDocuments({})" | tr -d '\r') / 163723 expected (default)"
@@ -409,21 +419,21 @@ create-config-maps() {
 
 start-web-services() {
   echo "Starting web services..."
-  kubectl apply -f k8/django
+  kubectl apply -f legacy_k8/django
   echo "Start up complete."
   echo
 }
 
 start-tf-server() {
   echo "Starting tensorflow serving worker..."
-  kubectl apply -f k8/tf-serving
+  kubectl apply -f legacy_k8/tf-serving
   echo "Start up complete."
   echo
 }
 
 start-celery-workers() {
   echo "Starting celery workers..."
-  kubectl apply -f k8/celery
+  kubectl apply -f legacy_k8/celery
   echo "Start up complete."
   echo
 }

@@ -1,0 +1,30 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: django-env
+  namespace: {{ .Release.Namespace }}
+data:
+  {{- with .Values.env }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- if .Values.mongodb.enabled }}
+  MONGO_HOST: {{ .Release.Name }}-mongodb
+  MONGO_USER: {{ .Values.mongodb.auth.username }}
+  MONGO_PW: {{ .Values.mongodb.auth.password }}
+  MONGO_AUTH_DB: {{ .Values.mongodb.auth.database }}
+  {{- end }}
+  {{- if .Values.mysql.enabled }}
+  MYSQL_HOST: {{ .Release.Name }}-mysql
+  MYSQL_DATABASE: {{ .Values.mysql.db.name }}
+  MYSQL_ROOT_PASSWORD: {{ .Values.mysql.root.password }}
+  {{- end }}
+  REDIS_HOST: {{ .Release.Name }}-redis-master
+  REDIS_PORT: {{ .Values.redis.redisPort | quote }}
+  {{- if .Values.redis.usePassword }}
+  REDIS_PASSWORD: {{ .Values.redis.password }}
+  {{- end }}
+  RABBIT_HOST: {{ .Release.Name }}-rabbitmq
+  RABBITMQ_NODE_PORT: {{ .Values.rabbitmq.service.port | quote }}
+  RABBITMQ_USERNAME: {{ .Values.rabbitmq.auth.username }}
+  RABBITMQ_PASSWORD: {{ .Values.rabbitmq.auth.password }}
+  VERSION_NUMBER: {{ .Chart.AppVersion | quote }}
