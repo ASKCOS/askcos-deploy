@@ -82,6 +82,12 @@ celery:
   - name: crnetworkworker
     replicaCount: 1
     cmd: "celery -A askcos_site worker -c 2 -Q cr_network_worker -n cr_network_worker@%h --pool=gevent"
+  - name: crnetworkv2worker
+    replicaCount: 1
+    cmd: "celery -A askcos_site worker -c 1 -Q cr_network_v2_worker -n cr_network_v2_worker@%h --pool=gevent"
+    resources:
+      requests:
+        memory: "24.0G"
   - name: descriptorsworker
     replicaCount: 1
     cmd: "celery -A askcos_site worker -c 1 -Q descriptors_worker -n descriptors_worker@%h"
