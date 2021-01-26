@@ -236,6 +236,8 @@ mysql:
     password: askcos_root
   db:
     name: askcos_db
+  replication: 
+    enabled: false
 
 # Values for rabbitmq subchart
 # See full list of parameters at https://hub.helm.sh/charts/bitnami/rabbitmq
