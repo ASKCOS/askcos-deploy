@@ -12,6 +12,8 @@ services:
     ports:
       - '80:80'
       - '443:443'
+    depends_on:
+      - app
 
   mysql:
     image: ${PUBLIC_IMAGE_REGISTRY}mysql:5.7
@@ -52,6 +54,11 @@ services:
       - 'staticdata:/usr/local/askcos-site/static'
       - 'appdata:/usr/local/askcos-core/askcos/data'
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+    depends_on:
+      - mongo
+      - mysql
+      - rabbit
+      - redis
 
   cr_network_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
@@ -61,6 +68,11 @@ services:
     command: bash -c "celery -A askcos_site worker -c 2 -Q cr_network_worker -n cr_network_worker@%h --pool=gevent"
     volumes:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+    depends_on:
+      - mongo
+      - mysql
+      - rabbit
+      - redis
 
   cr_network_v2_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
@@ -70,6 +82,11 @@ services:
     command: bash -c "celery -A askcos_site worker -c 1 -Q cr_network_v2_worker -n cr_network_v2_worker@%h --pool=gevent"
     volumes:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+    depends_on:
+      - mongo
+      - mysql
+      - rabbit
+      - redis
 
   tb_coordinator_mcts:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
@@ -79,6 +96,11 @@ services:
     command: bash -c "celery -A askcos_site worker -c 1 -Q tb_coordinator_mcts -n tb_coordinator_mcts@%h --pool=gevent --without-heartbeat"
     volumes:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+    depends_on:
+      - mongo
+      - mysql
+      - rabbit
+      - redis
 
   tb_coordinator_mcts_v2:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
@@ -88,6 +110,11 @@ services:
     command: bash -c "celery -A askcos_site worker -c 1 -Q tb_coordinator_mcts_v2 -n tb_coordinator_mcts_v2@%h --pool=gevent --without-heartbeat"
     volumes:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+    depends_on:
+      - mongo
+      - mysql
+      - rabbit
+      - redis
 
   tb_c_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
@@ -97,6 +124,11 @@ services:
     command: bash -c "celery -A askcos_site worker -c 12 -Q tb_c_worker -n tb_c_worker@%h --pool=gevent"
     volumes:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+    depends_on:
+      - mongo
+      - mysql
+      - rabbit
+      - redis
 
   sites_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
@@ -106,6 +138,11 @@ services:
     command: bash -c "celery -A askcos_site worker -c 1 -Q sites_worker --pool=gevent -n sites_worker@%h"
     volumes:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+    depends_on:
+      - mongo
+      - mysql
+      - rabbit
+      - redis
 
   selec_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
@@ -115,6 +152,11 @@ services:
     command: bash -c "celery -A askcos_site worker -c 1 -Q selec_worker --pool=gevent -n selec_worker@%h"
     volumes:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+    depends_on:
+      - mongo
+      - mysql
+      - rabbit
+      - redis
 
   impurity_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
@@ -124,6 +166,11 @@ services:
     command: bash -c "celery -A askcos_site worker -c 1 -Q impurity_worker --pool=gevent -n impurity_worker@%h"
     volumes:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+    depends_on:
+      - mongo
+      - mysql
+      - rabbit
+      - redis
 
   atom_mapping_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
@@ -133,6 +180,11 @@ services:
     command: bash -c "celery -A askcos_site worker -c 3 -Q atom_mapping_worker --pool=gevent -n atom_mapping_worker@%h"
     volumes:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+    depends_on:
+      - mongo
+      - mysql
+      - rabbit
+      - redis
 
   tffp_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
@@ -142,6 +194,11 @@ services:
     command: bash -c "celery -A askcos_site worker -c 5 -Q tffp_worker --pool=gevent -n tffp_worker@%h"
     volumes:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+    depends_on:
+      - mongo
+      - mysql
+      - rabbit
+      - redis
 
   path_ranking_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
@@ -151,6 +208,11 @@ services:
     command: bash -c "celery -A askcos_site worker -c 1 -Q path_ranking_worker -n path_ranking_worker@%h"
     volumes:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+    depends_on:
+      - mongo
+      - mysql
+      - rabbit
+      - redis
 
   descriptors_worker:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-site:${VERSION_NUMBER}
@@ -160,6 +222,11 @@ services:
     command: bash -c "celery -A askcos_site worker -c 1 -Q descriptors_worker -n descriptors_worker@%h"
     volumes:
       - './custom_django_settings.py:/usr/local/askcos-site/askcos_site/custom_settings.py'
+    depends_on:
+      - mongo
+      - mysql
+      - rabbit
+      - redis
 
   template-relevance-reaxys:
     image: ${ASKCOS_IMAGE_REGISTRY}askcos-data/template-relevance-reaxys:1.0
