@@ -25,6 +25,19 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "askcos.serviceAccountName" $ }}
+      initContainers:
+        - name: wait-for-mysql
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nc -z {{ $.Release.Name }}-mysql {{ $.Values.mysql.service.port }}; do echo waiting for mysql; sleep 2; done"]
+        - name: wait-for-mongo
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nc -z {{ $.Release.Name }}-mongodb {{ $.Values.mongodb.service.port }}; do echo waiting for mongodb; sleep 2; done"]
+        - name: wait-for-rabbit
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nc -z {{ $.Release.Name }}-rabbitmq {{ $.Values.rabbitmq.service.port }}; do echo waiting for rabbitmq; sleep 2; done"]
+        - name: wait-for-redis
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nc -z {{ $.Release.Name }}-redis-master {{ $.Values.redis.redisPort }}; do echo waiting for redis; sleep 2; done"]
       containers:
         - name: {{ .name }}
           image: "{{ $.Values.app.image.repository }}:{{ $.Values.app.image.tag | default $.Chart.AppVersion }}"
