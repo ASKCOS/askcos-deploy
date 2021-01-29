@@ -534,13 +534,13 @@ post-update-message() {
   echo
   echo "Please note the following items which may require further action:"
   echo
-  echo "1) ASKCOS 2020.10 includes a new Pistachio-based template relevance model."
-  echo "   In order to use the new model, you must import some additional data:"
+  echo "1) ASKCOS 2020.10 added a new Pistachio-based template relevance model."
+  echo "   If you have not done so already, you should import the required data:"
   echo
   echo "       bash deploy.sh seed-db -c pistachio -r pistachio --append"
   echo
-  echo "2) ASKCOS 2020.10 includes updated buyables data with more sources."
-  echo "   To import the new buyables data, you can run the following:"
+  echo "2) ASKCOS 2020.10 added updated buyables data with more sources."
+  echo "   If you have not done so already, you can import the data as follows:"
   echo
   echo "       bash deploy.sh seed-db -b default --append"
   echo
