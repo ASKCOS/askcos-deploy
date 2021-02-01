@@ -34,6 +34,9 @@ spec:
           volumeMounts:
             - name: staticfiles
               mountPath: /static
+        - name: wait-for-app
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nc -z {{ .Release.Name }}-askcos {{ .Values.app.service.port }}; do echo waiting for app; sleep 2; done"]
       containers:
         - name: {{ .Values.nginx.name }}
           image: "{{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}"

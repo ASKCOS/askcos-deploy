@@ -8,6 +8,7 @@ data:
     server {
       listen 0.0.0.0:8080;
       charset     utf-8;
+      client_max_body_size 25M;
       access_log /opt/bitnami/nginx/logs/askcos_access.log;
       error_log /opt/bitnami/nginx/logs/askcos_error.log;
 

@@ -1,0 +1,35 @@
+image:
+  name: alpine/helm:3.4.2
+  entrypoint: ["/bin/sh", "-c"]
+
+variables:
+  HELM_EXPERIMENTAL_OCI: 1
+
+stages:
+  - lint
+  - deploy
+
+before_script:
+  - helm registry login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  - cd helm
+
+lint-helm:
+  stage: lint
+  script:
+    - helm lint askcos
+
+push-helm-dev:  # build dev branch for continuous deployment
+  stage: deploy
+  script:
+    - helm chart save askcos $CI_REGISTRY_IMAGE/helm:dev
+    - helm chart push $CI_REGISTRY_IMAGE/helm:dev
+  only:
+    - dev
+
+push-helm-release:  # build all releases, as determined by tags
+  stage: deploy
+  script:
+    - helm chart save askcos $CI_REGISTRY_IMAGE/helm:$CI_COMMIT_TAG
+    - helm chart push $CI_REGISTRY_IMAGE/helm:$CI_COMMIT_TAG
+  only:
+    - tags

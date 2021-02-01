@@ -55,6 +55,7 @@ usage() {
 
 # Worker scales (i.e. number of celery workers)
 n_cr_network_worker=1       # Context recommender neural network worker
+n_cr_network_v2_worker=1     # Context recommender neural network v2 worker
 n_tb_coordinator_mcts=2     # Tree builder coordinator
 n_tb_coordinator_mcts_v2=2  # Tree builder v2 coordinator
 n_tb_c_worker=1             # Tree builder chiral worker
@@ -460,6 +461,7 @@ start-ml-servers() {
 start-celery-workers() {
   echo "Starting celery workers..."
   docker-compose up -d --scale cr_network_worker=$n_cr_network_worker \
+                       --scale cr_network_v2_worker=$n_cr_network_v2_worker \
                        --scale tb_coordinator_mcts=$n_tb_coordinator_mcts \
                        --scale tb_coordinator_mcts_v2=$n_tb_coordinator_mcts_v2 \
                        --scale tb_c_worker=$n_tb_c_worker \
@@ -471,7 +473,7 @@ start-celery-workers() {
                        --scale path_ranking_worker=$n_path_ranking_worker \
                        --scale descriptors_worker=$n_descriptors_worker \
                        --remove-orphans \
-                       cr_network_worker tb_coordinator_mcts tb_coordinator_mcts_v2 tb_c_worker \
+                       cr_network_worker cr_network_v2_worker tb_coordinator_mcts tb_coordinator_mcts_v2 tb_c_worker \
                        sites_worker selec_worker impurity_worker atom_mapping_worker tffp_worker path_ranking_worker descriptors_worker
   echo "Start up complete."
   echo
@@ -532,13 +534,13 @@ post-update-message() {
   echo
   echo "Please note the following items which may require further action:"
   echo
-  echo "1) ASKCOS 2020.10 includes a new Pistachio-based template relevance model."
-  echo "   In order to use the new model, you must import some additional data:"
+  echo "1) ASKCOS 2020.10 added a new Pistachio-based template relevance model."
+  echo "   If you have not done so already, you should import the required data:"
   echo
   echo "       bash deploy.sh seed-db -c pistachio -r pistachio --append"
   echo
-  echo "2) ASKCOS 2020.10 includes updated buyables data with more sources."
-  echo "   To import the new buyables data, you can run the following:"
+  echo "2) ASKCOS 2020.10 added updated buyables data with more sources."
+  echo "   If you have not done so already, you can import the data as follows:"
   echo
   echo "       bash deploy.sh seed-db -b default --append"
   echo
