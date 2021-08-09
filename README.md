@@ -15,4 +15,4 @@ Software requirements for deployment are Docker and Docker Compose. A basic conf
 
 The core functions needed for deployment are all contained in the `deploy.sh` script (or `deploy_k8.sh` for Kubernetes deployment). See `deploy.sh -h` for supported commands and options.
 
-Additional information on deployment and releases can be found at [askcos.gitlab.io](https://askcos.gitlab.io).
+Additional information on deployment and releases can be found at [askcos.github.io](https://askcos.github.io).
