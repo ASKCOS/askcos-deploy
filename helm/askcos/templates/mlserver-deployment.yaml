@@ -20,9 +20,9 @@ spec:
         app.kubernetes.io/component: {{ .name }}
         {{- include "askcos.common.matchLabels" $ | nindent 8 }}
     spec:
-      {{- with $.Values.imagePullSecrets }}
+      {{- if $.Values.imagePullSecrets }}
       imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
+        {{- toYaml $.Values.imagePullSecrets | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "askcos.serviceAccountName" $ }}
       containers:

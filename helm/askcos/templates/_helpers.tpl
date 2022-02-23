@@ -78,7 +78,9 @@ Create the name of the service account to use
 Create image pull secret
 */}}
 {{- define "askcos.imagePullSecret" }}
+{{- if .Values.imageCredentials }}
 {{- with .Values.imageCredentials }}
 {{- printf "{\"auths\":{\"%s\":{\"username\":\"%s\",\"password\":\"%s\",\"auth\":\"%s\"}}}" .registry .username .password (printf "%s:%s" .username .password | b64enc) | b64enc }}
+{{- end }}
 {{- end }}
 {{- end }}

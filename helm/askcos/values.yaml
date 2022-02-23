@@ -21,16 +21,16 @@ env:
   AUTH_MODIFY_BUYABLES: "False"
 
 # Image credentials for downloading ASKCOS images
-imageCredentials:
-  registry: registry.gitlab.com
-  username: ""
-  password: ""
+# imageCredentials:
+#   registry: ""
+#   username: ""
+#   password: ""
 
 # Name of the secret to use for registry authentication
 # The above imageCredentials are stored in "regcred"
 # This should only be changed if you would like to use an existing secret
-imagePullSecrets:
-  - name: regcred
+# imagePullSecrets:
+#   - name: regcred
 
 mongoSeed:
   # Whether or not to perform first-time data seeding of mongo database
@@ -42,7 +42,7 @@ mongoSeed:
 app:
   name: app
   image:
-    repository: registry.gitlab.com/mlpds_mit/askcos/askcos-site
+    repository: askcos/askcos-site
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
@@ -132,7 +132,7 @@ celery:
 mlserver:
   - name: fast-filter
     image:
-      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/fast-filter
+      repository: askcos/fast-filter
       pullPolicy: IfNotPresent
       tag: "1.0"
     replicaCount: 1
@@ -141,7 +141,7 @@ mlserver:
       port: 8501
   - name: template-relevance-reaxys
     image:
-      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/template-relevance-reaxys
+      repository: askcos/template-relevance-reaxys
       pullPolicy: IfNotPresent
       tag: "1.0"
     replicaCount: 1
@@ -150,7 +150,7 @@ mlserver:
       port: 8501
   - name: template-relevance-pistachio
     image:
-      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/template-relevance-pistachio
+      repository: askcos/template-relevance-pistachio
       pullPolicy: IfNotPresent
       tag: "1.0"
     replicaCount: 1
@@ -159,7 +159,7 @@ mlserver:
       port: 8501
   - name: ts-pathway-ranker
     image:
-      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/pathway-ranker
+      repository: askcos/pathway-ranker
       pullPolicy: IfNotPresent
       tag: "1.0"
     replicaCount: 1
@@ -168,7 +168,7 @@ mlserver:
       port: 8080
   - name: ts-descriptors
     image:
-      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-data/descriptors
+      repository: askcos/descriptors
       pullPolicy: IfNotPresent
       tag: "1.0"
     replicaCount: 1
@@ -177,7 +177,7 @@ mlserver:
       port: 8080
   - name: ts-rxnmapper
     image:
-      repository: registry.gitlab.com/mlpds_mit/askcos/askcos-base/rxnmapper
+      repository: askcos/rxnmapper
       pullPolicy: IfNotPresent
       tag: "0.1.2"
     replicaCount: 1
