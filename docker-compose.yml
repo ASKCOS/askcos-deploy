@@ -27,7 +27,7 @@ services:
       - '3306'
 
   mongo:
-    image: ${PUBLIC_IMAGE_REGISTRY}mongo:4.2
+    image: ${PUBLIC_IMAGE_REGISTRY}mongo:4.4
     command: --wiredTigerCacheSizeGB 1.5
     hostname: mongo
     restart: always
@@ -229,33 +229,33 @@ services:
       - redis
 
   template-relevance-reaxys:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos-data/template-relevance-reaxys:1.0
+    image: ${ASKCOS_IMAGE_REGISTRY}template-relevance-reaxys:1.0
     restart: always
     expose:
       - 8501
 
   template-relevance-pistachio:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos-data/template-relevance-pistachio:1.0
+    image: ${ASKCOS_IMAGE_REGISTRY}template-relevance-pistachio:1.0
     restart: always
     expose:
       - 8501
 
   fast-filter:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos-data/fast-filter:1.0
+    image: ${ASKCOS_IMAGE_REGISTRY}fast-filter:1.0
     restart: always
     expose:
       - 8501
 
   ts-pathway-ranker:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos-data/pathway-ranker:1.0
+    image: ${ASKCOS_IMAGE_REGISTRY}pathway-ranker:1.0
     restart: always
 
   ts-descriptors:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos-data/descriptors:1.0
+    image: ${ASKCOS_IMAGE_REGISTRY}descriptors:1.0
     restart: always
 
   ts-rxnmapper:
-    image: ${ASKCOS_IMAGE_REGISTRY}askcos-base/rxnmapper:0.1.2
+    image: ${ASKCOS_IMAGE_REGISTRY}rxnmapper:0.1.2
     restart: always
 
   redis:

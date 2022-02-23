@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: fast-filter
-          image: registry.gitlab.com/mlpds_mit/askcos/askcos/models:fast-filter
+          image: askcos/fast-filter:1.0
           ports:
             - containerPort: 8501
       imagePullSecrets:
