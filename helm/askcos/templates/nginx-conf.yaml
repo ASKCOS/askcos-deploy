@@ -1,0 +1,30 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nginx-config
+  namespace: {{ .Release.Namespace }}
+data:
+  nginx.conf: |
+    server {
+      listen 0.0.0.0:8080;
+      charset     utf-8;
+      client_max_body_size 25M;
+      access_log /opt/bitnami/nginx/logs/askcos_access.log;
+      error_log /opt/bitnami/nginx/logs/askcos_error.log;
+
+      location /static {
+        alias /static;
+      }
+
+      location / {
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_read_timeout 600;
+        proxy_redirect off;
+
+        proxy_pass http://{{ include "askcos.fullname" . }}:{{ .Values.app.service.port }};
+      }
+    }

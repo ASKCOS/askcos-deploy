@@ -54,14 +54,18 @@ usage() {
 }
 
 # Worker scales (i.e. number of celery workers)
-n_cr_network_worker=1    # Context recommender neural network worker
-n_tb_coordinator_mcts=2  # Tree builder coordinator
-n_tb_c_worker=1          # Tree builder chiral worker
-n_sites_worker=1         # Site selectivity worker
-n_impurity_worker=1      # Impurity worker
-n_atom_mapping_worker=1  # Atom mapping worker
-n_tffp_worker=1          # Templat-free forward predictor worker
-n_selec_worker=1        # General selectivity worker
+n_cr_network_worker=1       # Context recommender neural network worker
+n_cr_network_v2_worker=1     # Context recommender neural network v2 worker
+n_tb_coordinator_mcts=2     # Tree builder coordinator
+n_tb_coordinator_mcts_v2=2  # Tree builder v2 coordinator
+n_tb_c_worker=1             # Tree builder chiral worker
+n_sites_worker=1            # Site selectivity worker
+n_impurity_worker=1         # Impurity worker
+n_atom_mapping_worker=1     # Atom mapping worker
+n_tffp_worker=1             # Template-free forward predictor worker
+n_selec_worker=1            # General selectivity worker
+n_path_ranking_worker=1     # Path ranking worker
+n_descriptors_worker=1      # Descriptors worker
 
 # Create environment variable files from examples if they don't exist
 if [ ! -f ".env" ]; then
@@ -69,6 +73,32 @@ if [ ! -f ".env" ]; then
 fi
 if [ ! -f "customization" ]; then
   cp customization.example customization
+fi
+if [ ! -f "custom_django_settings.py" ]; then
+  echo
+  echo "Setting a unique Django secret key is highly recommended."
+  echo
+  echo "Note that if this is not a new deployment, changing the secret key"
+  echo "will invalidate user sessions. Passwords will not be affected."
+  echo
+  echo "Would you like to use a custom key (c), a random key (r), or the default key (d)?"
+  read -rp ">>> " response
+  case "$response" in
+    [Cc])
+      read -rp "New secret key: " new_secret
+      sed "s/notsosecret/${new_secret}/g" custom_django_settings_example.py > custom_django_settings.py
+      ;;
+    [Rr])
+      echo "Generating random secret key."
+      new_secret=$(base64 /dev/urandom | tr -dc "[:alnum:]" | head -c 32)
+      sed "s/notsosecret/${new_secret}/g" custom_django_settings_example.py > custom_django_settings.py
+      ;;
+    *)
+      echo "Keeping default secret key."
+      cp custom_django_settings_example.py custom_django_settings.py
+      ;;
+  esac
+  echo
 fi
 
 # Get docker compose variables from .env
@@ -229,8 +259,7 @@ diff-env() {
 
 clean-data() {
   echo "Cleaning up application data volumes..."
-  docker-compose stop app mongo nginx
-  docker-compose rm -f app mongo nginx
+  docker-compose rm -fsv app mongo nginx rabbit
   docker volume rm ${COMPOSE_PROJECT_NAME}_appdata
   docker volume rm ${COMPOSE_PROJECT_NAME}_staticdata
   echo "Clean up complete."
@@ -281,10 +310,10 @@ seed-db() {
     echo "Loading default buyables data in background..."
     buyables_file="/data/app/buyables/buyables.json.gz"
     seed-db-collection buyables "$buyables_file" -d
-  elif [ -n "$BUYABLES" ]; then
+  elif [ -f "$BUYABLES" ]; then
     echo "Loading buyables data from $BUYABLES in background..."
     buyables_file="/data/app/buyables/$(basename $BUYABLES)"
-    docker cp "$BUYABLES" deploy_mongo_1:"$buyables_file"
+    docker cp "$BUYABLES" ${COMPOSE_PROJECT_NAME}_mongo_1:"$buyables_file"
     run-mongo-js "db.buyables.remove({})"
     seed-db-collection buyables "$buyables_file" -d
   fi
@@ -293,10 +322,16 @@ seed-db() {
     echo "Loading default chemicals data in background..."
     chemicals_file="/data/app/historian/chemicals.json.gz"
     seed-db-collection chemicals "$chemicals_file" -d
-  elif [ -n "$CHEMICALS" ]; then
+    chemicals_file="/data/app/historian/historian.pistachio.json.gz"
+    DB_DROP="" seed-db-collection chemicals "$chemicals_file" -d
+  elif [ "$CHEMICALS" = "pistachio" ]; then
+    echo "Loading pistachio chemicals data in background..."
+    chemicals_file="/data/app/historian/historian.pistachio.json.gz"
+    seed-db-collection chemicals "$chemicals_file" -d
+  elif [ -f "$CHEMICALS" ]; then
     echo "Loading chemicals data from $CHEMICALS in background..."
     chemicals_file="/data/app/historian/$(basename $CHEMICALS)"
-    docker cp "$CHEMICALS" deploy_mongo_1:"$chemicals_file"
+    docker cp "$CHEMICALS" ${COMPOSE_PROJECT_NAME}_mongo_1:"$chemicals_file"
     seed-db-collection chemicals "$chemicals_file" -d
   fi
 
@@ -304,10 +339,10 @@ seed-db() {
     echo "Loading default reactions data in background..."
     reactions_file="/data/app/historian/reactions.json.gz"
     seed-db-collection reactions "$reactions_file" -d
-  elif [ -n "$REACTIONS" ]; then
+  elif [ -f "$REACTIONS" ]; then
     echo "Loading reactions data from $REACTIONS in background..."
     reactions_file="/data/app/historian/$(basename $REACTIONS)"
-    docker cp "$REACTIONS" deploy_mongo_1:"$reactions_file"
+    docker cp "$REACTIONS" ${COMPOSE_PROJECT_NAME}_mongo_1:"$reactions_file"
     seed-db-collection reactions "$reactions_file" -d
   fi
 
@@ -315,10 +350,16 @@ seed-db() {
     echo "Loading default retrosynthetic templates..."
     retro_file="/data/app/templates/retro.templates.json.gz"
     seed-db-collection retro_templates "$retro_file"
-  elif [ -n "$RETRO_TEMPLATES" ]; then
+    retro_file="/data/app/templates/retro.templates.pistachio.json.gz"
+    DB_DROP="" seed-db-collection retro_templates "$retro_file"
+  elif [ "$RETRO_TEMPLATES" = "pistachio" ]; then
+    echo "Loading pistachio retrosynthetic templates..."
+    retro_file="/data/app/templates/retro.templates.pistachio.json.gz"
+    seed-db-collection retro_templates "$retro_file"
+  elif [ -f "$RETRO_TEMPLATES" ]; then
     echo "Loading retrosynthetic templates from $RETRO_TEMPLATES ..."
     retro_file="/data/app/templates/$(basename $RETRO_TEMPLATES)"
-    docker cp "$RETRO_TEMPLATES" deploy_mongo_1:"$retro_file"
+    docker cp "$RETRO_TEMPLATES" ${COMPOSE_PROJECT_NAME}_mongo_1:"$retro_file"
     seed-db-collection retro_templates "$retro_file"
   fi
 
@@ -326,10 +367,10 @@ seed-db() {
     echo "Loading default forward templates..."
     forward_file="/data/app/templates/forward.templates.json.gz"
     seed-db-collection forward_templates "$forward_file"
-  elif [ -n "$FORWARD_TEMPLATES" ]; then
+  elif [ -f "$FORWARD_TEMPLATES" ]; then
     echo "Loading forward templates from $FORWARD_TEMPLATES ..."
     forward_file="/data/app/templates/$(basename $FORWARD_TEMPLATES)"
-    docker cp "$FORWARD_TEMPLATES" deploy_mongo_1:"$forward_file"
+    docker cp "$FORWARD_TEMPLATES" ${COMPOSE_PROJECT_NAME}_mongo_1:"$forward_file"
     seed-db-collection forward_templates "$forward_file"
   fi
 
@@ -356,11 +397,11 @@ index-db() {
 }
 
 count-mongo-docs() {
-  echo "Buyables collection:          $(run-mongo-js "db.buyables.countDocuments({})" | tr -d '\r') / 106750 expected (default)"
-  echo "Chemicals collection:         $(run-mongo-js "db.chemicals.countDocuments({})" | tr -d '\r') / 17562038 expected (default)"
-  echo "Reactions collection:         $(run-mongo-js "db.reactions.countDocuments({})" | tr -d '\r') / 0 expected (default)"
-  echo "Retro template collection:    $(run-mongo-js "db.retro_templates.countDocuments({})" | tr -d '\r') / 163723 expected (default)"
-  echo "Forward template collection:  $(run-mongo-js "db.forward_templates.countDocuments({})" | tr -d '\r') / 17089 expected (default)"
+  echo "Buyables collection:          $(run-mongo-js "db.buyables.estimatedDocumentCount({})" | tr -d '\r') / 280469 expected (default)"
+  echo "Chemicals collection:         $(run-mongo-js "db.chemicals.estimatedDocumentCount({})" | tr -d '\r') / 19175563 expected (default)"
+  echo "Reactions collection:         $(run-mongo-js "db.reactions.estimatedDocumentCount({})" | tr -d '\r') / 0 expected (default)"
+  echo "Retro template collection:    $(run-mongo-js "db.retro_templates.estimatedDocumentCount({})" | tr -d '\r') / 383259 expected (default)"
+  echo "Forward template collection:  $(run-mongo-js "db.forward_templates.estimatedDocumentCount({})" | tr -d '\r') / 17089 expected (default)"
 }
 
 copy-http-conf() {
@@ -410,9 +451,9 @@ start-web-services() {
   echo
 }
 
-start-tf-server() {
-  echo "Starting tensorflow serving worker..."
-  docker-compose up -d --remove-orphans template-relevance-reaxys fast-filter
+start-ml-servers() {
+  echo "Starting tensorflow and pytorch servers..."
+  docker-compose up -d --remove-orphans template-relevance-reaxys template-relevance-pistachio fast-filter ts-pathway-ranker ts-descriptors ts-rxnmapper
   echo "Start up complete."
   echo
 }
@@ -420,16 +461,20 @@ start-tf-server() {
 start-celery-workers() {
   echo "Starting celery workers..."
   docker-compose up -d --scale cr_network_worker=$n_cr_network_worker \
+                       --scale cr_network_v2_worker=$n_cr_network_v2_worker \
                        --scale tb_coordinator_mcts=$n_tb_coordinator_mcts \
+                       --scale tb_coordinator_mcts_v2=$n_tb_coordinator_mcts_v2 \
                        --scale tb_c_worker=$n_tb_c_worker \
                        --scale sites_worker=$n_sites_worker \
                        --scale selec_worker=$n_selec_worker \
                        --scale impurity_worker=$n_impurity_worker \
                        --scale atom_mapping_worker=$n_atom_mapping_worker \
                        --scale tffp_worker=$n_tffp_worker \
+                       --scale path_ranking_worker=$n_path_ranking_worker \
+                       --scale descriptors_worker=$n_descriptors_worker \
                        --remove-orphans \
-                       cr_network_worker tb_coordinator_mcts tb_c_worker \
-                       sites_worker selec_worker impurity_worker atom_mapping_worker tffp_worker
+                       cr_network_worker cr_network_v2_worker tb_coordinator_mcts tb_coordinator_mcts_v2 tb_c_worker \
+                       sites_worker selec_worker impurity_worker atom_mapping_worker tffp_worker path_ranking_worker descriptors_worker
   echo "Start up complete."
   echo
 }
@@ -481,6 +526,37 @@ restore() {
   echo "Restore complete."
 }
 
+post-update-message() {
+  echo
+  echo -e "\033[92m================================================================================\033[00m"
+  echo
+  echo "The local ASKCOS deployment has been updated to version ${VERSION_NUMBER}!"
+  echo
+  echo "Please note the following items which may require further action:"
+  echo
+  echo "1) ASKCOS 2020.10 added a new Pistachio-based template relevance model."
+  echo "   If you have not done so already, you should import the required data:"
+  echo
+  echo "       bash deploy.sh seed-db -c pistachio -r pistachio --append"
+  echo
+  echo "2) ASKCOS 2020.10 added updated buyables data with more sources."
+  echo "   If you have not done so already, you can import the data as follows:"
+  echo
+  echo "       bash deploy.sh seed-db -b default --append"
+  echo
+  echo "   If no custom buyables have been added and you would like to remove existing"
+  echo "   buyables data before importing, you can omit the '--append' argument."
+  echo
+  echo "3) ASKCOS 2020.07 changed the default MongoDB index types for much faster look-ups."
+  echo "   If you have not done so already, you should recreate the MongoDB indexes:"
+  echo
+  echo "       bash deploy.sh index-db --drop-indexes"
+  echo
+  echo "                      ~~~ Thank you for using ASKCOS! ~~~"
+  echo
+  echo -e "\033[92m================================================================================\033[00m"
+}
+
 # Handle positional arguments, which should be commands
 if [ $# -eq 0 ]; then
   # No arguments
@@ -492,7 +568,7 @@ else
   do
     case "$arg" in
       clean-data | start-db-services | seed-db | copy-http-conf | copy-https-conf | create-ssl | pull-images | \
-      start-web-services | start-tf-server | start-celery-workers | migrate | set-db-defaults | count-mongo-docs | \
+      start-web-services | start-ml-servers | start-celery-workers | migrate | set-db-defaults | count-mongo-docs | \
       backup | restore | index-db | diff-env )
         # This is a defined function, so execute it
         $arg
@@ -506,7 +582,7 @@ else
         start-web-services
         set-db-defaults
         seed-db  # Must occur after starting app
-        start-tf-server
+        start-ml-servers
         start-celery-workers
         migrate
         ;;
@@ -519,7 +595,7 @@ else
         start-web-services
         set-db-defaults
         seed-db  # Must occur after starting app
-        start-tf-server
+        start-ml-servers
         start-celery-workers
         migrate
         ;;
@@ -530,15 +606,16 @@ else
         clean-data
         start-db-services
         start-web-services
-        start-tf-server
+        start-ml-servers
         start-celery-workers
         migrate
+        post-update-message
         ;;
       start)
         # (Re)start existing deployment
         start-db-services
         start-web-services
-        start-tf-server
+        start-ml-servers
         start-celery-workers
         ;;
       stop)
@@ -560,7 +637,7 @@ else
         esac
         ;;
       *)
-        echo "Error: Unsupported command $1" >&2  # print to stderr
+        echo "Error: Unsupported command $arg" >&2  # print to stderr
         exit 1;
     esac
   done

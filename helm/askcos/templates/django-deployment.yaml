@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "askcos.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "askcos.app.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "askcos.app.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "askcos.app.matchLabels" . | nindent 8 }}
+    spec:
+      {{- if $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml $.Values.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "askcos.serviceAccountName" . }}
+      volumes:
+        - name: staticfiles
+          emptyDir: {}
+      initContainers:
+        - name: wait-for-mysql
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nc -z {{ .Release.Name }}-mysql {{ .Values.mysql.service.port }}; do echo waiting for mysql; sleep 2; done"]
+        - name: migrate
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          command: ["/bin/sh", "-c", "python /usr/local/askcos-site/manage.py makemigrations main && python /usr/local/askcos-site/manage.py migrate"]
+          envFrom:
+            - configMapRef:
+                name: django-env
+        - name: wait-for-mongo
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nc -z {{ .Release.Name }}-mongodb {{ .Values.mongodb.service.port }}; do echo waiting for mongodb; sleep 2; done"]
+        - name: wait-for-rabbit
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nc -z {{ .Release.Name }}-rabbitmq {{ .Values.rabbitmq.service.port }}; do echo waiting for rabbitmq; sleep 2; done"]
+        - name: wait-for-redis
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nc -z {{ .Release.Name }}-redis-master {{ .Values.redis.redisPort }}; do echo waiting for redis; sleep 2; done"]
+      containers:
+        - name: {{ .Values.app.name }}
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          command: ["/bin/sh", "-c", "uwsgi --http :{{ .Values.app.service.port }} --master --processes=4 --wsgi-file /usr/local/askcos-site/wsgi.py"]
+          ports:
+            - containerPort: {{ .Values.app.service.port }}
+          envFrom:
+            - configMapRef:
+                name: django-env
+          {{- if .Values.app.resources }}
+          resources:
+            {{- toYaml .Values.app.resources | nindent 12 }}
+          {{- end }}

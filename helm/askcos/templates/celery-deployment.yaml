@@ -1,0 +1,55 @@
+{{- range .Values.celery }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $.Release.Name }}-{{ .name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app.kubernetes.io/component: {{ .name }}
+    {{- include "askcos.common.matchLabels" $ | nindent 4 }}
+    {{- include "askcos.common.metaLabels" $ | nindent 4 }}
+spec:
+  replicas: {{ .replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: {{ .name }}
+      {{- include "askcos.common.matchLabels" $ | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: {{ .name }}
+        {{- include "askcos.common.matchLabels" $ | nindent 8 }}
+    spec:
+      {{- if $.Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml $.Values.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "askcos.serviceAccountName" $ }}
+      initContainers:
+        - name: wait-for-mysql
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nc -z {{ $.Release.Name }}-mysql {{ $.Values.mysql.service.port }}; do echo waiting for mysql; sleep 2; done"]
+        - name: wait-for-mongo
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nc -z {{ $.Release.Name }}-mongodb {{ $.Values.mongodb.service.port }}; do echo waiting for mongodb; sleep 2; done"]
+        - name: wait-for-rabbit
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nc -z {{ $.Release.Name }}-rabbitmq {{ $.Values.rabbitmq.service.port }}; do echo waiting for rabbitmq; sleep 2; done"]
+        - name: wait-for-redis
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nc -z {{ $.Release.Name }}-redis-master {{ $.Values.redis.redisPort }}; do echo waiting for redis; sleep 2; done"]
+      containers:
+        - name: {{ .name }}
+          image: "{{ $.Values.app.image.repository }}:{{ $.Values.app.image.tag | default $.Chart.AppVersion }}"
+          imagePullPolicy: {{ $.Values.app.image.pullPolicy }}
+          command: ["/bin/bash"]
+          args: ["-c", "{{ .cmd }}"]
+          envFrom:
+            - configMapRef:
+                name: django-env
+          {{- if .resources }}
+          resources:
+            {{- toYaml .resources | nindent 12 }}
+          {{- end }}
+---
+{{ end }}

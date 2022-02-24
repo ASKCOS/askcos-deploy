@@ -1,0 +1,90 @@
+{{- if .Values.mongoSeed.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-mongo-seed
+  namespace: {{ .Release.Namespace }}
+spec:
+  template:
+    spec:
+      volumes:
+        - name: seed-db-script
+          configMap:
+            name: seed-db-script
+        - name: data-files
+          emptyDir: {}
+      initContainers:
+        - name: copy-data
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          command: ["/bin/sh", "-c", "cp -r /usr/local/askcos-core/askcos/data/. /opt/askcos/data/"]
+          volumeMounts:
+            - name: data-files
+              mountPath: /opt/askcos/data
+        - name: wait-for-mongo
+          image: alpine:3.12
+          command: ["/bin/sh", "-c", "until nc -z {{ .Release.Name }}-mongodb {{ .Values.mongodb.service.port }}; do echo waiting for mongodb; sleep 2; done"]
+      containers:
+        - name: seed-db
+          image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+          command: ["/bin/sh", "/opt/askcos/scripts/seed.sh"]
+          envFrom:
+            - configMapRef:
+                name: django-env
+          volumeMounts:
+            - name: seed-db-script
+              mountPath: /opt/askcos/scripts
+            - name: data-files
+              mountPath: /opt/askcos/data
+      restartPolicy: Never
+  backoffLimit: 2
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: seed-db-script
+  namespace: {{ .Release.Namespace }}
+data:
+  seed.sh: |
+    {{- if .Values.mongoSeed.dropColl }}
+    DROP="--drop"
+    {{- end }}
+    seed_coll() {
+      # arg 1 is collection name
+      # arg 2 is file path
+      gunzip -c $2 | mongoimport --host ${MONGO_HOST} \
+                                 --username ${MONGO_USER} \
+                                 --password ${MONGO_PW} \
+                                 --authenticationDatabase ${MONGO_AUTH_DB} \
+                                 --db askcos \
+                                 --collection $1 \
+                                 --type json \
+                                 --jsonArray ${DROP}
+    }
+    seed_coll buyables /opt/askcos/data/buyables/buyables.json.gz &
+    seed_coll chemicals /opt/askcos/data/historian/chemicals.json.gz &
+    seed_coll retro_templates /opt/askcos/data/templates/retro.templates.json.gz &
+    seed_coll forward_templates /opt/askcos/data/templates/forward.templates.json.gz &
+    {{- if .Values.mongoSeed.dropColl }}
+    DROP=""
+    {{- end }}
+    seed_coll chemicals /opt/askcos/data/historian/historian.pistachio.json.gz &
+    seed_coll retro_templates /opt/askcos/data/templates/retro.templates.pistachio.json.gz &
+    wait
+    {{- if .Values.mongoSeed.dropColl }}
+    # Need to index again since we dropped the collections
+    run_mongo_js() {
+      # arg 1 is js command
+      mongo --host ${MONGO_HOST} \
+            --username ${MONGO_USER} \
+            --password ${MONGO_PW} \
+            --authenticationDatabase ${MONGO_AUTH_DB} \
+            askcos \
+            --eval "$1"
+    }
+    run_mongo_js 'db.buyables.createIndex({smiles: 1, source: 1})'
+    run_mongo_js 'db.chemicals.createIndex({smiles: 1, template_set: 1})'
+    run_mongo_js 'db.reactions.createIndex({reaction_id: 1, template_set: 1})'
+    run_mongo_js 'db.retro_templates.createIndex({index: 1, template_set: 1})'
+    {{- end }}
+{{- end }}
